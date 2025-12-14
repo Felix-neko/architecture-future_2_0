@@ -3,7 +3,8 @@ set -e
 
 # === Базовые переменные ===
 BASEDIR=$(cd "$(dirname "$0")" && pwd)
-VM_NAME="ubuntu-vm-01"
+# VM_NAME из переменной среды или значение по умолчанию
+VM_NAME="${VM_NAME:-ubuntu-vm}"
 VM_DISK="$BASEDIR/${VM_NAME}.qcow2"
 BASE_IMAGE="$BASEDIR/ubuntu-24.04-server-cloudimg-amd64.img"
 SEED_DIR="$BASEDIR/cloud-init"
@@ -15,16 +16,8 @@ KEY_NAME="vm_access_key"
 PRIVATE_KEY="$BASEDIR/$KEY_NAME"
 PUBLIC_KEY="$BASEDIR/${KEY_NAME}.pub"
 
-# Генерация SSH-ключей, если их нет
-if [ ! -f "$PRIVATE_KEY" ] || [ ! -f "$PUBLIC_KEY" ]; then
-  echo "Генерация SSH-ключей для доступа к ВМ..."
-  ssh-keygen -t ed25519 -f "$PRIVATE_KEY" -N "" -C "vm-access-key"
-  chmod 600 "$PRIVATE_KEY"
-  chmod 644 "$PUBLIC_KEY"
-  echo "✓ SSH-ключи сгенерированы: $PRIVATE_KEY, $PUBLIC_KEY"
-else
-  echo "Используются существующие SSH-ключи: $PRIVATE_KEY"
-fi
+# Генерация SSH-ключей через отдельный скрипт (если их нет)
+"$BASEDIR/generate_ssh_keys.sh" --quiet
 
 SSH_PUBKEY=$(cat "$PUBLIC_KEY")
 

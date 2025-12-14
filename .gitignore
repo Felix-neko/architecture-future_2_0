@@ -1,6 +1,6 @@
-/task_1_terraform_module/ubuntu-24.04.3-live-server-amd64.iso
-/task_1_terraform_module/ubuntu-vm-01.qcow2
-/task_1_terraform_module/ubuntu-vm-01-seed.iso
 /task_1_terraform_module/autoinstall/
 /task_1_terraform_module/ubuntu-24.04-server-cloudimg-amd64.img
 /task_1_terraform_module/cloud-init/
+*.qcow2
+*.iso
+/task_1_terraform_module/cloud-init-proxmox/
