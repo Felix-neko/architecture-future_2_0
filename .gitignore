@@ -4,3 +4,4 @@
 *.qcow2
 *.iso
 /task_1_terraform_module/cloud-init-proxmox/
+/task_1_terraform_module/cloud-init-pve-auto/
