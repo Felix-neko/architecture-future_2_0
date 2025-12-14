@@ -1,0 +1,21 @@
+# Шаблон ответов для автоматической установки Proxmox VE
+# Переменные: ${VM_NAME}, ${ROOT_PASSWORD}, ${SSH_PUBKEY}
+
+[global]
+keyboard = "en-us"
+country = "ru"
+fqdn = "${VM_NAME}.local"
+mailto = "admin@${VM_NAME}.local"
+timezone = "Europe/Moscow"
+root_password = "${ROOT_PASSWORD}"
+root_ssh_keys = [
+    "${SSH_PUBKEY}"
+]
+reboot_on_error = true
+
+[network]
+source = "from-dhcp"
+
+[disk-setup]
+filesystem = "ext4"
+disk_list = ["sda"]

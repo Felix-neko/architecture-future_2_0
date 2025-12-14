@@ -1,0 +1,4 @@
+# Файл активации автоматической установки Proxmox VE
+# mode = "iso" означает, что answer.toml находится на этом же ISO
+# Допустимые значения: iso, http, partition
+mode = "iso"

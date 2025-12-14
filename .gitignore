@@ -5,3 +5,4 @@
 *.iso
 /task_1_terraform_module/cloud-init-proxmox/
 /task_1_terraform_module/cloud-init-pve-auto/
+/task_1_terraform_module/debug-screenshots/
