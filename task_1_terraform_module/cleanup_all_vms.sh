@@ -78,3 +78,14 @@ if [ -n "$REMAINING" ]; then
     echo "  $VM"
   done
 fi
+
+# Удаляем служебные файлы с информацией о нодах (если есть)
+BASEDIR=$(cd "$(dirname "$0")" && pwd)
+if [ -f "$BASEDIR/.node_ips" ]; then
+  rm -f "$BASEDIR/.node_ips"
+  echo "✓ Удалён файл .node_ips"
+fi
+if [ -f "$BASEDIR/.node_names" ]; then
+  rm -f "$BASEDIR/.node_names"
+  echo "✓ Удалён файл .node_names"
+fi

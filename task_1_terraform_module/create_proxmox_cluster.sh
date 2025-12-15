@@ -21,9 +21,9 @@ BASEDIR=$(cd "$(dirname "$0")" && pwd)
 
 # === Параметры по умолчанию ===
 NODE_COUNT=3
-NODE_CPUS=4
-NODE_RAM_MB=8192
-NODE_DISK_SIZE="40G"
+NODE_CPUS=5
+NODE_RAM_MB=16384
+NODE_DISK_SIZE="80G"
 ROOT_PASSWORD="mega_root_password"
 CLUSTER_NAME="pve-cluster"
 SKIP_NODES=false
