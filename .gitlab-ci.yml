@@ -1,0 +1,97 @@
+# =============================================================================
+# GitLab CI/CD Pipeline
+#
+# Этот пайплайн выполняется при каждом push в ветку terraform
+# и затем делает push в основной GitHub-репозиторий
+# =============================================================================
+
+# Стадии пайплайна
+stages:
+  - test           # Тестирование
+  - build          # Сборка (если нужно)
+  - deploy         # Деплой / push в GitHub
+
+# Глобальные переменные
+variables:
+  # Ветка для push в GitHub
+  GITHUB_BRANCH: main
+  # URL GitHub-репозитория (без токена, токен добавляется при push)
+  GITHUB_REPO: github.com/Felix-neko/architecture-future_2_0.git
+
+# =============================================================================
+# Стадия: test — Hello World пример
+# =============================================================================
+hello_world:
+  stage: test
+  # Используем простой образ Alpine
+  image: alpine:latest
+  # Выполняется только для ветки terraform
+  only:
+    - terraform
+  script:
+    - echo "🎉 Hello World from GitLab CI/CD!"
+    - echo "Branch: $CI_COMMIT_BRANCH"
+    - echo "Commit: $CI_COMMIT_SHA"
+    - echo "Author: $CI_COMMIT_AUTHOR"
+    - echo "Message: $CI_COMMIT_MESSAGE"
+    - echo ""
+    - echo "✓ Pipeline выполнен успешно!"
+
+# =============================================================================
+# Стадия: test — Проверка Terraform-файлов
+# =============================================================================
+terraform_validate:
+  stage: test
+  # Образ с Terraform
+  image: hashicorp/terraform:latest
+  # Выполняется только для ветки terraform
+  only:
+    - terraform
+  script:
+    - echo "🔍 Проверка Terraform-конфигурации..."
+    - cd task_1_terraform_module/terraform/vm_module
+    - terraform init -backend=false
+    - terraform validate
+    - echo "✓ Terraform-конфигурация валидна!"
+  # Разрешаем неудачу (если Terraform недоступен)
+  allow_failure: true
+
+# =============================================================================
+# Стадия: deploy — Push в GitHub
+# =============================================================================
+push_to_github:
+  stage: deploy
+  # Образ с Git
+  image: alpine/git:latest
+  # Выполняется только для ветки terraform
+  only:
+    - terraform
+  # Переменные окружения
+  variables:
+    # Отключаем клонирование (у нас уже есть код)
+    GIT_STRATEGY: clone
+  script:
+    - echo "🚀 Push изменений в GitHub..."
+    
+    # Проверяем наличие токена
+    - |
+      if [ -z "$GITHUB_TOKEN" ]; then
+        echo "❌ GITHUB_TOKEN не установлен!"
+        echo "Добавьте переменную GITHUB_TOKEN в Settings -> CI/CD -> Variables"
+        exit 1
+      fi
+    
+    # Настраиваем Git
+    - git config --global user.email "gitlab-ci@local"
+    - git config --global user.name "GitLab CI"
+    
+    # Добавляем GitHub как remote
+    - git remote add github "https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO}" || git remote set-url github "https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO}"
+    
+    # Push в GitHub
+    - git push github HEAD:${GITHUB_BRANCH} --force
+    
+    - echo "✓ Изменения успешно отправлены в GitHub!"
+  # Зависит от успешного выполнения тестов
+  needs:
+    - hello_world

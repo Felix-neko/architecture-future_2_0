@@ -6,3 +6,6 @@
 /task_1_terraform_module/cloud-init-proxmox/
 /task_1_terraform_module/cloud-init-pve-auto/
 /task_1_terraform_module/debug-screenshots/
+/task_2_stage_saved_in_s3/.env
+/task_1_terraform_module/.node_ips
+/task_1_terraform_module/.node_names

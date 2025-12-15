@@ -1,0 +1,143 @@
+# =============================================================================
+# Docker Compose для GitLab с CI/CD и push в GitHub
+#
+# Этот compose файл разворачивает:
+# - GitLab CE (Community Edition) — Git-сервер с CI/CD
+# - GitLab Runner — исполнитель CI/CD пайплайнов
+#
+# После запуска GitLab будет доступен на http://localhost:8929
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # GitLab CE — основной сервер
+  # ---------------------------------------------------------------------------
+  gitlab:
+    # Образ GitLab Community Edition
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    hostname: gitlab.local
+    restart: unless-stopped
+
+    # Переменные окружения для конфигурации GitLab
+    environment:
+      # Внешний URL для доступа к GitLab
+      GITLAB_OMNIBUS_CONFIG: |
+        # Внешний URL (используется для генерации ссылок)
+        external_url 'http://localhost:8929'
+        
+        # Отключаем встроенный NGINX на порту 80, используем 8929
+        nginx['listen_port'] = 8929
+        nginx['listen_https'] = false
+        
+        # Отключаем Registry (не нужен для базового использования)
+        registry['enable'] = false
+        
+        # Отключаем мониторинг для экономии ресурсов
+        prometheus_monitoring['enable'] = false
+        alertmanager['enable'] = false
+        node_exporter['enable'] = false
+        redis_exporter['enable'] = false
+        postgres_exporter['enable'] = false
+        pgbouncer_exporter['enable'] = false
+        gitlab_exporter['enable'] = false
+        
+        # Уменьшаем потребление ресурсов
+        puma['worker_processes'] = 2
+        sidekiq['concurrency'] = 5
+        
+        # Настройки для работы с GitHub (push mirror)
+        gitlab_rails['env'] = {
+          'GITHUB_TOKEN' => ENV['GITHUB_TOKEN']
+        }
+
+    # Порты: GitLab Web UI и SSH
+    ports:
+      # Web UI на порту 8929
+      - "8929:8929"
+      # SSH для Git операций
+      - "2224:22"
+
+    # Volumes для сохранения данных
+    volumes:
+      # Конфигурация GitLab
+      - gitlab_config:/etc/gitlab
+      # Логи GitLab
+      - gitlab_logs:/var/log/gitlab
+      # Данные GitLab (репозитории, БД и т.д.)
+      - gitlab_data:/var/opt/gitlab
+
+    # Сети
+    networks:
+      - gitlab_network
+
+    # Healthcheck для проверки готовности
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8929/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+
+    # Ограничения ресурсов (GitLab требователен к ресурсам)
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # ---------------------------------------------------------------------------
+  # GitLab Runner — исполнитель CI/CD пайплайнов
+  # ---------------------------------------------------------------------------
+  gitlab-runner:
+    # Образ GitLab Runner
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: unless-stopped
+
+    # Зависимость от GitLab
+    depends_on:
+      gitlab:
+        condition: service_healthy
+
+    # Volumes
+    volumes:
+      # Конфигурация Runner
+      - gitlab_runner_config:/etc/gitlab-runner
+      # Docker socket для запуска контейнеров
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    # Сети
+    networks:
+      - gitlab_network
+
+    # Переменные окружения
+    environment:
+      # URL GitLab для регистрации Runner
+      - CI_SERVER_URL=http://gitlab:8929
+
+# -----------------------------------------------------------------------------
+# Volumes — персистентное хранилище
+# -----------------------------------------------------------------------------
+volumes:
+  # Конфигурация GitLab (/etc/gitlab)
+  gitlab_config:
+    name: gitlab_config
+  # Логи GitLab (/var/log/gitlab)
+  gitlab_logs:
+    name: gitlab_logs
+  # Данные GitLab (/var/opt/gitlab)
+  gitlab_data:
+    name: gitlab_data
+  # Конфигурация GitLab Runner
+  gitlab_runner_config:
+    name: gitlab_runner_config
+
+# -----------------------------------------------------------------------------
+# Networks — сеть для взаимодействия сервисов
+# -----------------------------------------------------------------------------
+networks:
+  gitlab_network:
+    name: gitlab_network
+    driver: bridge
