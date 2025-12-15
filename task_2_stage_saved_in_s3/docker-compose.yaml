@@ -6,9 +6,9 @@
 # - GitLab Runner — исполнитель CI/CD пайплайнов
 #
 # После запуска GitLab будет доступен на http://localhost:8929
-# Пользователь: developer / mega_gitlab_password
+# Пользователь: root / ${GITLAB_ROOT_PASSWORD} (из .env)
 #
-# ВАЖНО: При `docker compose down` все данные удаляются!
+# ВАЖНО: При `docker compose down -v` все данные удаляются!
 # =============================================================================
 
 services:
@@ -24,6 +24,15 @@ services:
 
     # Переменные окружения для конфигурации GitLab
     environment:
+      # Пароль root из .env файла (встроенный механизм GitLab)
+      GITLAB_ROOT_PASSWORD: ${GITLAB_ROOT_PASSWORD}
+      # GitHub токен для CI/CD
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      # Yandex Cloud S3 credentials для terraform state
+      YC_ACCESS_KEY_ID: ${YC_ACCESS_KEY_ID}
+      YC_SECRET_ACCESS_KEY: ${YC_SECRET_ACCESS_KEY}
+      YC_S3_BUCKET: ${YC_S3_BUCKET}
+      YC_S3_ENDPOINT: ${YC_S3_ENDPOINT}
       # Внешний URL для доступа к GitLab
       GITLAB_OMNIBUS_CONFIG: |
         # Внешний URL (используется для генерации ссылок в UI)
@@ -61,20 +70,28 @@ services:
       # SSH для Git операций
       - "2224:22"
 
-    # Без именованных volumes — данные не сохраняются между перезапусками
-    # При docker compose down всё удаляется
+    # Volumes для данных GitLab
+    volumes:
+      # Данные GitLab (сохраняются между перезапусками, удаляются при down -v)
+      - gitlab_data:/var/opt/gitlab
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
 
     # Сети
     networks:
       - gitlab_network
 
+    # Дополнительные хосты для доступа к Proxmox/LXC нодам
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     # Healthcheck для проверки готовности
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:8929/-/readiness 2>/dev/null | grep -q ok || curl -s http://localhost:8929 | grep -q GitLab"]
       interval: 30s
-      timeout: 10s
-      retries: 20
-      start_period: 300s
+      timeout: 30s
+      retries: 30
+      start_period: 600s
 
     # Ограничения ресурсов (GitLab требователен к ресурсам)
     deploy:
@@ -93,10 +110,10 @@ services:
     container_name: gitlab-runner
     restart: unless-stopped
 
-    # Зависимость от GitLab
+    # Зависимость от GitLab (не ждём healthcheck, runner сам дождётся GitLab)
     depends_on:
       gitlab:
-        condition: service_healthy
+        condition: service_started
 
     # Volumes
     volumes:
@@ -109,15 +126,27 @@ services:
     networks:
       - gitlab_network
 
+    # Дополнительные хосты для доступа к Proxmox/LXC нодам
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     # Переменные окружения
     environment:
       # URL GitLab для регистрации Runner
       - CI_SERVER_URL=http://gitlab:8929
 
 # -----------------------------------------------------------------------------
-# Volumes — для Runner конфигурации
+# Volumes — для GitLab данных и Runner конфигурации
 # -----------------------------------------------------------------------------
 volumes:
+  # GitLab данные
+  gitlab_data:
+    name: gitlab_data
+  gitlab_config:
+    name: gitlab_config
+  gitlab_logs:
+    name: gitlab_logs
+  # Runner конфигурация
   runner_config:
     name: gitlab_runner_config
 

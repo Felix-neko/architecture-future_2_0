@@ -19,7 +19,7 @@ set -e
 
 BASEDIR=$(cd "$(dirname "$0")" && pwd)
 TERRAFORM_DIR="$BASEDIR/terraform/vm_module"
-ENVS_DIR="$BASEDIR/terraform/envs"
+PRESETS_DIR="$BASEDIR/terraform/presets"
 ENVIRONMENTS_DIR="$BASEDIR/terraform/environments"
 
 # === Параметры по умолчанию ===
@@ -129,13 +129,13 @@ if [ -n "$ENVIRONMENT" ]; then
     TFVARS_FILE="$WORK_DIR/terraform.tfvars"
     log_info "Используется отдельное окружение: $ENVIRONMENT"
 else
-    # Используем пресет из envs/
+    # Используем пресет из presets/
     if [[ ! "$ENV" =~ ^(dev|stage|prod)$ ]]; then
         log_error "Неверное окружение: $ENV. Допустимые значения: dev, stage, prod"
         exit 1
     fi
     WORK_DIR="$TERRAFORM_DIR"
-    TFVARS_FILE="$ENVS_DIR/${ENV}.tfvars"
+    TFVARS_FILE="$PRESETS_DIR/${ENV}.tfvars"
     log_info "Используется пресет окружения: $ENV"
 fi
 
@@ -521,6 +521,29 @@ for VMID in $VMIDS; do
         echo -e "${YELLOW}⚠ pct exec не работает (контейнер может быть не запущен)${NC}"
     fi
 done
+
+# =============================================================================
+# ШАГ 6: Очистка (terraform destroy)
+# =============================================================================
+log_section "Шаг 6: Очистка Terraform-инфраструктуры"
+
+if [ "$SKIP_TERRAFORM" = false ]; then
+    log_info "Уничтожение созданных ресурсов (terraform destroy)..."
+    
+    cd "$WORK_DIR"
+    
+    if [ -n "$ENVIRONMENT" ]; then
+        # Для отдельных окружений используем terraform.tfvars автоматически
+        terraform destroy -auto-approve
+    else
+        terraform destroy -var-file="$TFVARS_FILE" -auto-approve
+    fi
+    
+    log_info "✓ Terraform destroy завершён"
+    cd "$BASEDIR"
+else
+    log_info "Пропуск очистки Terraform (--skip-terraform)"
+fi
 
 # =============================================================================
 # Итоги

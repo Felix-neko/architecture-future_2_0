@@ -64,7 +64,8 @@ locals {
   node_assignments = local.placement_error == "" ? split(",", local.resource_check.node_assignments) : []
 
   # Путь к файлу с IP-адресами контейнеров
-  lxc_ips_file = "${local.base_dir}/.lxc_ips"
+  # Если указан output_dir - используем его, иначе - текущую директорию (path.root)
+  lxc_ips_file = var.output_dir != "" ? "${var.output_dir}/.lxc_ips" : "${path.root}/.lxc_ips"
 }
 
 # -----------------------------------------------------------------------------

@@ -33,6 +33,9 @@ module "lxc_cluster" {
 
   # Проверка ресурсов
   enable_resource_check = var.enable_resource_check
+
+  # Директория для вывода .lxc_ips - текущая папка среды
+  output_dir = path.root
 }
 
 # Выходные переменные

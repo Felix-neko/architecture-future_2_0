@@ -92,3 +92,9 @@ variable "ip_start_offset" {
   type        = number
   default     = 100
 }
+
+variable "output_dir" {
+  description = "Директория для сохранения выходных файлов (.lxc_ips). Если пусто - используется текущая директория"
+  type        = string
+  default     = ""
+}
