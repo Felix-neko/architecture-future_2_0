@@ -178,31 +178,35 @@ for i in $(seq 1 "$CONTAINER_COUNT"); do
 done
 
 # Формируем JSON-вывод
+# ВАЖНО: Terraform external data source требует плоский JSON со строковыми значениями
 if [ -n "$PLACEMENT_ERROR" ]; then
     # Экранируем кавычки в сообщении об ошибке
     ESCAPED_ERROR=$(echo "$PLACEMENT_ERROR" | sed 's/"/\\"/g')
-    echo "{\"error\": \"$ESCAPED_ERROR\", \"selected_nodes\": \"[]\", \"node_assignments\": \"\"}"
+    cat <<EOF
+{"error": "$ESCAPED_ERROR", "selected_nodes": "", "node_assignments": ""}
+EOF
 else
     # Формируем строку назначений (node1,node2,node3)
     ASSIGNMENTS_STR=$(IFS=','; echo "${ASSIGNMENTS[*]}")
     
-    # Формируем JSON-массив уникальных нод
+    # Формируем список уникальных нод через запятую (не JSON-массив!)
     declare -A UNIQUE_NODES
     for node in "${ASSIGNMENTS[@]}"; do
         UNIQUE_NODES["$node"]=1
     done
     
-    NODES_JSON="["
+    NODES_LIST=""
     first=true
     for node in "${!UNIQUE_NODES[@]}"; do
         if [ "$first" = true ]; then
             first=false
         else
-            NODES_JSON+=","
+            NODES_LIST+=","
         fi
-        NODES_JSON+="\"$node\""
+        NODES_LIST+="$node"
     done
-    NODES_JSON+="]"
     
-    echo "{\"error\": \"\", \"selected_nodes\": \"$NODES_JSON\", \"node_assignments\": \"$ASSIGNMENTS_STR\"}"
+    cat <<EOF
+{"error": "", "selected_nodes": "$NODES_LIST", "node_assignments": "$ASSIGNMENTS_STR"}
+EOF
 fi

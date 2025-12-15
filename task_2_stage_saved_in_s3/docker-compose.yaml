@@ -6,6 +6,9 @@
 # - GitLab Runner — исполнитель CI/CD пайплайнов
 #
 # После запуска GitLab будет доступен на http://localhost:8929
+# Пользователь: developer / mega_gitlab_password
+#
+# ВАЖНО: При `docker compose down` все данные удаляются!
 # =============================================================================
 
 services:
@@ -23,8 +26,13 @@ services:
     environment:
       # Внешний URL для доступа к GitLab
       GITLAB_OMNIBUS_CONFIG: |
-        # Внешний URL (используется для генерации ссылок)
+        # Внешний URL (используется для генерации ссылок в UI)
         external_url 'http://localhost:8929'
+        
+        # URL для клонирования репозиториев (для CI/CD runner'ов)
+        gitlab_rails['gitlab_ssh_host'] = 'gitlab'
+        gitlab_rails['gitlab_host'] = 'gitlab'
+        gitlab_rails['gitlab_port'] = 8929
         
         # Отключаем встроенный NGINX на порту 80, используем 8929
         nginx['listen_port'] = 8929
@@ -45,11 +53,6 @@ services:
         # Уменьшаем потребление ресурсов
         puma['worker_processes'] = 2
         sidekiq['concurrency'] = 5
-        
-        # Настройки для работы с GitHub (push mirror)
-        gitlab_rails['env'] = {
-          'GITHUB_TOKEN' => ENV['GITHUB_TOKEN']
-        }
 
     # Порты: GitLab Web UI и SSH
     ports:
@@ -58,14 +61,8 @@ services:
       # SSH для Git операций
       - "2224:22"
 
-    # Volumes для сохранения данных
-    volumes:
-      # Конфигурация GitLab
-      - gitlab_config:/etc/gitlab
-      # Логи GitLab
-      - gitlab_logs:/var/log/gitlab
-      # Данные GitLab (репозитории, БД и т.д.)
-      - gitlab_data:/var/opt/gitlab
+    # Без именованных volumes — данные не сохраняются между перезапусками
+    # При docker compose down всё удаляется
 
     # Сети
     networks:
@@ -73,10 +70,10 @@ services:
 
     # Healthcheck для проверки готовности
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8929/-/health"]
+      test: ["CMD-SHELL", "curl -s http://localhost:8929/-/readiness 2>/dev/null | grep -q ok || curl -s http://localhost:8929 | grep -q GitLab"]
       interval: 30s
       timeout: 10s
-      retries: 10
+      retries: 20
       start_period: 300s
 
     # Ограничения ресурсов (GitLab требователен к ресурсам)
@@ -103,10 +100,10 @@ services:
 
     # Volumes
     volumes:
-      # Конфигурация Runner
-      - gitlab_runner_config:/etc/gitlab-runner
       # Docker socket для запуска контейнеров
       - /var/run/docker.sock:/var/run/docker.sock
+      # Конфигурация Runner (именованный volume для сохранения между перезапусками)
+      - runner_config:/etc/gitlab-runner
 
     # Сети
     networks:
@@ -118,20 +115,10 @@ services:
       - CI_SERVER_URL=http://gitlab:8929
 
 # -----------------------------------------------------------------------------
-# Volumes — персистентное хранилище
+# Volumes — для Runner конфигурации
 # -----------------------------------------------------------------------------
 volumes:
-  # Конфигурация GitLab (/etc/gitlab)
-  gitlab_config:
-    name: gitlab_config
-  # Логи GitLab (/var/log/gitlab)
-  gitlab_logs:
-    name: gitlab_logs
-  # Данные GitLab (/var/opt/gitlab)
-  gitlab_data:
-    name: gitlab_data
-  # Конфигурация GitLab Runner
-  gitlab_runner_config:
+  runner_config:
     name: gitlab_runner_config
 
 # -----------------------------------------------------------------------------

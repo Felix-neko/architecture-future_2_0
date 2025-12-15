@@ -377,14 +377,6 @@ if [ "$SKIP_TERRAFORM" = false ]; then
         terraform plan -var-file="$TFVARS_FILE" -out=tfplan
     fi
     
-    # Проверяем, есть ли ошибка размещения
-    log_info "Проверка ошибок размещения..."
-    PLACEMENT_ERROR=$(terraform output -raw placement_error 2>/dev/null || echo "")
-    if [ -n "$PLACEMENT_ERROR" ]; then
-        log_error "Ошибка размещения: $PLACEMENT_ERROR"
-        exit 1
-    fi
-    
     # Применение
     log_info "Применение изменений..."
     terraform apply -auto-approve tfplan

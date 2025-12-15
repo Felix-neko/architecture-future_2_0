@@ -1,134 +1,89 @@
-# GitLab с CI/CD и интеграцией с GitHub
+# GitLab CI/CD с автоматическим push в GitHub
 
-Этот проект разворачивает локальный GitLab-сервер с CI/CD пайплайном, который:
-1. Запускает тесты при push в ветку `terraform`
-2. Автоматически делает push изменений в GitHub
+Локальный GitLab-сервер с CI/CD пайплайном для:
+1. Тестирования при push в ветку `terraform`
+2. Автоматического push изменений в GitHub
 
-## Быстрый старт
-
-### 1. Подготовка
-
-Убедитесь, что установлены:
-- Docker
-- Docker Compose
-
-### 2. Настройка GitHub-токена
-
-Отредактируйте файл `.env`:
-
-```bash
-# Токен GitHub для push в репозиторий
-# Получить: GitHub -> Settings -> Developer settings -> Personal access tokens
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-**Важно:** Токен должен иметь права `repo` для push в репозиторий.
-
-### 3. Запуск GitLab
+## Быстрый старт (автоматическая настройка)
 
 ```bash
 cd task_2_stage_saved_in_s3
 
-# Сборка (если есть Dockerfile)
-docker compose build
-
-# Запуск
+# 1. Запуск GitLab
 docker compose up -d
 
-# Ожидание запуска GitLab (может занять 3-5 минут)
-for i in {1..60}; do
-  if curl -s -f http://localhost:8929/-/health > /dev/null 2>&1; then
-    echo "✓ GitLab готов к работе (попытка $i)"
-    break
-  fi
-  echo "Ожидание GitLab... (попытка $i/60)"
-  sleep 5
-done
+# 2. Инициализация (создаёт проект и настраивает GITHUB_TOKEN)
+./init-gitlab.sh
+
+# 3. Регистрация Runner
+RUNNER_TOKEN=$(docker exec gitlab gitlab-rails runner \
+  "puts Gitlab::CurrentSettings.current_application_settings.runners_registration_token" 2>/dev/null)
+docker exec gitlab-runner gitlab-runner register \
+  --non-interactive \
+  --url "http://gitlab:8929" \
+  --registration-token "$RUNNER_TOKEN" \
+  --executor "docker" \
+  --docker-image "alpine:latest" \
+  --docker-network-mode "gitlab_network" \
+  --docker-privileged
+
+# 4. Настройка clone_url (важно для CI/CD!)
+docker exec gitlab-runner sh -c 'sed -i "/executor = \"docker\"/a\\  clone_url = \"http://gitlab:8929\"" /etc/gitlab-runner/config.toml'
+docker restart gitlab-runner
+
+# 5. Настройка remote и push
+./switch-to-gitlab.sh
+git push gitlab terraform
 ```
 
-### 4. Первоначальная настройка GitLab
+## Данные для входа
 
-#### Получение пароля root:
+- **URL**: http://localhost:8929
+- **User**: root
+- **Password**: выводится скриптом `init-gitlab.sh`
+
+## Скрипты
+
+| Скрипт | Описание |
+|--------|----------|
+| `init-gitlab.sh` | Автоматически создаёт проект и настраивает GITHUB_TOKEN |
+| `switch-to-gitlab.sh` | Добавляет remote `gitlab` в репозиторий |
+| `switch-to-github.sh` | Добавляет remote `github` в репозиторий |
+
+## Полная очистка
+
+```bash
+docker compose down -v
+```
+
+**Важно**: При `docker compose down` все данные удаляются (volumes не сохраняются между перезапусками).
+
+## Ручная настройка (альтернатива)
+
+### Настройка GitHub-токена
+
+Создайте файл `.env`:
+```bash
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Токен должен иметь права `repo` для push.
+
+### Получение пароля root
 
 ```bash
 docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password
 ```
 
-пароль root: pD4j5iSfgmqnn+oFM/ZNGIsHjk9fZVuy2BcKSIDeW/o=
-
-#### Вход в GitLab:
-
-1. Откройте http://localhost:8929
-2. Войдите как `root` с паролем из предыдущего шага
-3. **Сразу смените пароль!** (GitLab попросит это сделать)
-
-### 5. Создание проекта в GitLab
-
-1. Нажмите **"New project"** -> **"Create blank project"**
-2. Название: `architecture-future_2_0`
-3. Visibility: Private
-4. **Не** инициализируйте README
-
-### 6. Push существующего репозитория в GitLab
+### Проверка работы пайплайна
 
 ```bash
-cd /home/felix/Projects/yandex_swa_pro/architecture-future_2_0
-
-# Добавляем GitLab как remote
-git remote add gitlab http://localhost:8929/root/architecture-future_2_0.git
-
-# Push всех веток
-git push gitlab --all
-
-# Push ветки terraform (если нужно создать)
-git checkout -b terraform
-git push gitlab terraform
-```
-
-### 7. Настройка GitHub-токена в GitLab CI/CD
-
-1. Откройте проект в GitLab
-2. Перейдите в **Settings** -> **CI/CD** -> **Variables**
-3. Нажмите **"Add variable"**:
-   - Key: `GITHUB_TOKEN`
-   - Value: ваш GitHub Personal Access Token
-   - Type: Variable
-   - Flags: ✓ Mask variable (скрыть в логах)
-
-### 8. Регистрация GitLab Runner
-
-```bash
-# Получаем registration token из GitLab:
-# Settings -> CI/CD -> Runners -> "New project runner" или используем существующий токен
-
-# Регистрируем Runner
-docker exec -it gitlab-runner gitlab-runner register \
-  --non-interactive \
-  --url "http://gitlab:8929" \
-  --registration-token "YOUR_REGISTRATION_TOKEN" \
-  --executor "docker" \
-  --docker-image "alpine:latest" \
-  --description "docker-runner" \
-  --docker-network-mode "gitlab_network"
-```
-
-**Альтернатива (через UI):**
-1. GitLab -> Settings -> CI/CD -> Runners
-2. Скопируйте registration token
-3. Выполните команду выше с этим токеном
-
-### 9. Проверка работы пайплайна
-
-```bash
-# Создаём коммит в ветке terraform
 git checkout terraform
-echo "# Test commit $(date)" >> test.md
-git add test.md
-git commit -m "Test CI/CD pipeline"
+git commit --allow-empty -m "Test CI/CD"
 git push gitlab terraform
 ```
 
-Перейдите в GitLab -> CI/CD -> Pipelines и убедитесь, что пайплайн запустился.
+Проверьте в GitLab -> CI/CD -> Pipelines.
 
 ---
 
