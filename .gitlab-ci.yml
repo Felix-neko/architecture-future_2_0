@@ -1,63 +1,38 @@
-# =============================================================================
-# GitLab CI/CD Pipeline
-#
-# Этот пайплайн выполняется при каждом push в ветку terraform
-# и затем делает push в основной GitHub-репозиторий
-# =============================================================================
-
 stages:
   - test
   - deploy
 
-# Глобальные переменные
 variables:
   GITHUB_BRANCH: main
   GITHUB_REPO: github.com/Felix-neko/architecture-future_2_0.git
 
-# =============================================================================
-# Стадия: test — Hello World
-# =============================================================================
 hello_world:
   stage: test
   image: alpine:latest
   script:
-    - echo "Hello from GitLab CI/CD!"
-    - echo "Branch: $CI_COMMIT_BRANCH"
-    - echo "Commit: $CI_COMMIT_SHA"
-    - echo "Pipeline works!"
+    - "echo Hello from GitLab CI/CD"
+    - "echo Branch: $CI_COMMIT_BRANCH"
+    - "echo Commit: $CI_COMMIT_SHA"
 
-# =============================================================================
-# Стадия: test — Проверка Terraform
-# =============================================================================
 terraform_validate:
   stage: test
   image: hashicorp/terraform:latest
   script:
-    - echo "Проверка Terraform-конфигурации..."
-    - cd task_1_terraform_module/terraform/vm_module
-    - terraform init -backend=false
-    - terraform validate
-    - echo "Terraform-конфигурация валидна!"
+    - "cd task_1_terraform_module/terraform/vm_module"
+    - "terraform init -backend=false"
+    - "terraform validate"
   allow_failure: true
 
-# =============================================================================
-# Стадия: deploy — Push в GitHub
-# =============================================================================
 push_to_github:
   stage: deploy
   image: alpine/git:latest
   variables:
     GIT_STRATEGY: clone
   script:
-    - |
-      if [ -z "$GITHUB_TOKEN" ]; then
-        echo "GITHUB_TOKEN не установлен!"
-        exit 1
-      fi
-    - git config --global user.email "gitlab-ci@local"
-    - git config --global user.name "GitLab CI"
-    - git remote add github "https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO}" || git remote set-url github "https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO}"
-    - git push github HEAD:${GITHUB_BRANCH} --force
-    - echo "Изменения отправлены в GitHub!"
+    - "test -n \"$GITHUB_TOKEN\" || { echo GITHUB_TOKEN not set; exit 1; }"
+    - "git config --global user.email gitlab-ci@local"
+    - "git config --global user.name GitLab-CI"
+    - "git remote add github https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO} || git remote set-url github https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO}"
+    - "git push github HEAD:${GITHUB_BRANCH} --force"
   needs:
     - hello_world
