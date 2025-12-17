@@ -14,7 +14,7 @@ variables:
 validate:
   stage: validate
   image:
-    name: hashicorp/terraform:1.6
+    name: hashicorp/terraform:latest
     entrypoint: [""]
   script:
     - echo "=== Валидация Terraform ==="
@@ -36,7 +36,7 @@ validate:
 plan:
   stage: plan
   image:
-    name: hashicorp/terraform:1.6
+    name: hashicorp/terraform:latest
     entrypoint: [""]
   script:
     - echo "=== Terraform Plan ==="
