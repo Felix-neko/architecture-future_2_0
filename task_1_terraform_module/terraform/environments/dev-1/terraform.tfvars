@@ -10,7 +10,7 @@ lxc_count = 1
 lxc_cpus = 2
 
 # RAM на контейнер в МБ (2 ГБ)
-lxc_memory_mb = 2048
+lxc_memory_mb = 4096
 
 # Размер диска в ГБ
 lxc_disk_gb = 10
