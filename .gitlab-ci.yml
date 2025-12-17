@@ -205,6 +205,8 @@ terraform_apply:
       # Экспортируем переменные для terraform
       export TF_VAR_proxmox_node_ips="[\"$(echo $NODE_IPS | sed 's/,/\",\"/g')\"]"
       export TF_VAR_proxmox_root_password="${PROXMOX_PASSWORD}"
+      # Отключаем SSH-проверку ресурсов (Docker runner не имеет сетевого доступа к Proxmox по SSH)
+      export TF_VAR_enable_resource_check="false"
 
       for ENV_DIR in ${TF_ROOT}/environments/dev-*/; do
         if [ -d "$ENV_DIR" ]; then
