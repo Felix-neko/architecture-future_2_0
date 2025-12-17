@@ -147,3 +147,4 @@ fi
 
 # Запускаем оригинальный entrypoint GitLab
 exec /assets/init-container
+
