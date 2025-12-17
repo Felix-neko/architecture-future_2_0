@@ -25,7 +25,7 @@ variable "lxc_count" {
 variable "lxc_cpus" {
   description = "Количество CPU-ядер для каждого LXC-контейнера"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "lxc_memory_mb" {
