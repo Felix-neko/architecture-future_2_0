@@ -1,10 +1,16 @@
+# =============================================================================
+# GitLab CI/CD Pipeline для Terraform Infrastructure
+# Имя pipeline отображается через переменную PIPELINE_NAME
+# =============================================================================
+
 stages:
-  - smoke_test
-  - terraform_lint
-  - terraform_apply
-  - sync_to_github
-  - save_state
-  - verify_infra
+  - smoke_test          # Быстрая проверка работоспособности
+  - terraform_lint      # Валидация terraform-конфигураций
+  - verify_proxmox      # Проверка соответствия TF state и Proxmox (до apply)
+  - terraform_apply     # Применение terraform-изменений
+  - sync_to_github      # Синхронизация с GitHub
+  - save_state          # Сохранение state в S3
+  - verify_infra        # Финальная проверка инфраструктуры
 
 variables:
   GITHUB_BRANCH: main
@@ -16,13 +22,21 @@ variables:
   AWS_DEFAULT_REGION: ru-central1
   PROXMOX_USER: root@pam
   PROXMOX_PORT: "8006"
+  # Отключаем SSH-проверку ресурсов (Docker runner не имеет SSH-доступа к Proxmox)
+  # Проверка выполняется через Proxmox API в stage verify_proxmox
+  TF_VAR_enable_resource_check: "false"
 
 smoke_test:
   stage: smoke_test
   image: alpine:latest
   script:
-    - echo "Smoke Test"
-    - echo "Pipeline $CI_PIPELINE_ID"
+    - echo "=========================================="
+    - echo "Pipeline: ${PIPELINE_NAME:-Terraform CI/CD}"
+    - echo "Triggered by: ${TRIGGERED_BY:-manual}"
+    - echo "Pipeline ID: $CI_PIPELINE_ID"
+    - echo "Branch: $CI_COMMIT_REF_NAME"
+    - echo "Commit: $CI_COMMIT_SHORT_SHA"
+    - echo "=========================================="
 
 terraform_lint:
   stage: terraform_lint
@@ -35,6 +49,134 @@ terraform_lint:
     - terraform version
     - terraform init -backend=false
     - terraform validate
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"
+
+# =============================================================================
+# Проверка соответствия TF state в S3 и реальной конфигурации Proxmox
+# Выполняется ДО terraform apply, чтобы обнаружить drift
+# =============================================================================
+verify_proxmox:
+  stage: verify_proxmox
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq aws-cli
+    - |
+      # Настройка AWS CLI для Yandex S3
+      mkdir -p ~/.aws
+      echo "[default]" > ~/.aws/credentials
+      echo "aws_access_key_id = $YC_ACCESS_KEY_ID" >> ~/.aws/credentials
+      echo "aws_secret_access_key = $YC_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+      echo "[default]" > ~/.aws/config
+      echo "region = ru-central1" >> ~/.aws/config
+  script:
+    - echo "=== Verify Proxmox State Consistency ==="
+    - |
+      # Получаем IP первой Proxmox ноды
+      if [ ! -f "${NODE_IPS_FILE}" ]; then
+        echo "[ERROR] File ${NODE_IPS_FILE} not found"
+        exit 1
+      fi
+      PROXMOX_HOST=$(head -1 "${NODE_IPS_FILE}")
+      PROXMOX_URL="https://${PROXMOX_HOST}:${PROXMOX_PORT}"
+      echo "Proxmox URL: $PROXMOX_URL"
+
+      # Проверяем доступность Proxmox API
+      echo "--- Testing Proxmox API connection ---"
+      if ! curl -s -k --connect-timeout 10 "${PROXMOX_URL}/api2/json/version" > /dev/null 2>&1; then
+        echo "[ERROR] Proxmox API not reachable at ${PROXMOX_URL}"
+        echo "Проверьте сетевую доступность Proxmox из GitLab Runner"
+        exit 1
+      fi
+      echo "[OK] Proxmox API reachable"
+
+      # Получаем API ticket
+      TICKET_RESPONSE=$(curl -s -k -d "username=root@pam&password=${PROXMOX_PASSWORD}" \
+        "${PROXMOX_URL}/api2/json/access/ticket" 2>&1)
+      TICKET=$(echo "$TICKET_RESPONSE" | jq -r '.data.ticket // empty')
+      
+      if [ -z "$TICKET" ]; then
+        echo "[ERROR] Failed to get Proxmox API ticket"
+        echo "Response: $TICKET_RESPONSE"
+        exit 1
+      fi
+      echo "[OK] Got Proxmox API ticket"
+
+      # Получаем список LXC из всех нод Proxmox
+      echo ""
+      echo "--- Fetching LXC containers from Proxmox ---"
+      NODES=$(curl -s -k -b "PVEAuthCookie=$TICKET" "${PROXMOX_URL}/api2/json/nodes" | jq -r '.data[].node')
+      
+      > /tmp/proxmox_lxc.txt
+      for NODE in $NODES; do
+        echo "Node: $NODE"
+        LXC_LIST=$(curl -s -k -b "PVEAuthCookie=$TICKET" "${PROXMOX_URL}/api2/json/nodes/${NODE}/lxc")
+        echo "$LXC_LIST" | jq -r '.data[] | "  VMID=\(.vmid) Name=\(.name) Status=\(.status)"'
+        echo "$LXC_LIST" | jq -r '.data[] | "\(.vmid)|\(.name)|\(.status)"' >> /tmp/proxmox_lxc.txt
+      done
+      
+      PROXMOX_LXC_COUNT=$(wc -l < /tmp/proxmox_lxc.txt | tr -d ' ')
+      echo ""
+      echo "Total LXC in Proxmox: $PROXMOX_LXC_COUNT"
+
+      # Скачиваем state файлы из S3 и сравниваем
+      echo ""
+      echo "--- Comparing S3 state with Proxmox ---"
+      MISMATCH_COUNT=0
+      
+      for ENV_DIR in ${TF_ROOT}/environments/dev-*/; do
+        if [ -d "$ENV_DIR" ]; then
+          ENV_NAME=$(basename "$ENV_DIR")
+          S3_STATE="s3://${YC_S3_BUCKET}/terraform-states/${ENV_NAME}/terraform.tfstate"
+          LOCAL_STATE="/tmp/${ENV_NAME}.tfstate"
+          
+          echo ""
+          echo "--- Environment: $ENV_NAME ---"
+          
+          if aws s3 ls "$S3_STATE" --endpoint-url "${YC_S3_ENDPOINT}" > /dev/null 2>&1; then
+            aws s3 cp "$S3_STATE" "$LOCAL_STATE" --endpoint-url "${YC_S3_ENDPOINT}" --quiet
+            
+            # Извлекаем VMID из state
+            VMIDS=$(jq -r '
+              .resources[]? | 
+              select(.type == "proxmox_lxc" or .type == "proxmox_virtual_environment_container") | 
+              .instances[]?.attributes.vmid // .instances[]?.attributes.vm_id
+            ' "$LOCAL_STATE" 2>/dev/null | sort -u)
+            
+            # Также проверяем outputs
+            OUTPUT_VMIDS=$(jq -r '.outputs.lxc_vmids.value[]?' "$LOCAL_STATE" 2>/dev/null | sort -u)
+            [ -n "$OUTPUT_VMIDS" ] && VMIDS="$OUTPUT_VMIDS"
+            
+            if [ -z "$VMIDS" ]; then
+              echo "  No LXC VMIDs in state (empty or new environment)"
+            else
+              echo "  VMIDs in state: $(echo $VMIDS | tr '\n' ' ')"
+              for VMID in $VMIDS; do
+                if grep -q "^${VMID}|" /tmp/proxmox_lxc.txt; then
+                  LXC_INFO=$(grep "^${VMID}|" /tmp/proxmox_lxc.txt)
+                  echo "  [MATCH] VMID=$VMID exists in Proxmox"
+                else
+                  echo "  [MISMATCH] VMID=$VMID in state but NOT in Proxmox!"
+                  MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                fi
+              done
+            fi
+          else
+            echo "  No state in S3 (new environment)"
+          fi
+        fi
+      done
+
+      echo ""
+      echo "=== Verification Result ==="
+      if [ "$MISMATCH_COUNT" -gt 0 ]; then
+        echo "[ERROR] Found $MISMATCH_COUNT mismatches between TF state and Proxmox!"
+        echo "State contains VMs that don't exist in Proxmox."
+        echo "This indicates drift - manual intervention required."
+        exit 1
+      else
+        echo "[OK] TF state is consistent with Proxmox infrastructure"
+      fi
   rules:
     - if: $CI_COMMIT_BRANCH == "terraform"
 
