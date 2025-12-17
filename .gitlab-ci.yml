@@ -3,7 +3,8 @@ stages:
   - deploy
 
 variables:
-  GITHUB_BRANCH: main
+  # Используем текущую ветку GitLab для push в GitHub
+  GITHUB_BRANCH: $CI_COMMIT_BRANCH
   GITHUB_REPO: github.com/Felix-neko/architecture-future_2_0.git
 
 hello_world:
@@ -16,7 +17,10 @@ hello_world:
 
 terraform_validate:
   stage: test
-  image: hashicorp/terraform:latest
+  image:
+    name: hashicorp/terraform:latest
+    # Переопределяем entrypoint, т.к. образ terraform имеет entrypoint "terraform"
+    entrypoint: [""]
   script:
     - "cd task_1_terraform_module/terraform/vm_module"
     - "terraform init -backend=false"
