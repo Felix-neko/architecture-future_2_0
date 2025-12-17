@@ -235,7 +235,9 @@ terraform_apply:
           terraform init
 
           echo "--- Step 3: Terraform plan ---"
-          terraform plan -out=tfplan
+          # -var enable_resource_check=false отключает SSH-проверку ресурсов
+          # (Docker runner не имеет сетевого доступа к Proxmox по SSH)
+          terraform plan -var enable_resource_check=false -out=tfplan
 
           echo "--- Step 4: Terraform apply ---"
           terraform apply -auto-approve tfplan
