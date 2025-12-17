@@ -8,6 +8,9 @@
 # После запуска GitLab будет доступен на http://localhost:8929
 # Пользователь: root / ${GITLAB_ROOT_PASSWORD} (из .env)
 #
+# РЕЖИМ СЕТИ: host — контейнеры используют сеть хоста напрямую,
+# что позволяет видеть Proxmox и LXC виртуалки без проброса портов.
+#
 # ВАЖНО: При `docker compose down -v` все данные удаляются!
 # =============================================================================
 
@@ -16,38 +19,36 @@ services:
   # GitLab CE — основной сервер
   # ---------------------------------------------------------------------------
   gitlab:
-    # Образ GitLab Community Edition
     image: gitlab/gitlab-ce:latest
     container_name: gitlab
     hostname: gitlab.local
     restart: unless-stopped
 
+    # Режим сети host — контейнер использует сеть хоста напрямую
+    network_mode: host
+
     # Переменные окружения для конфигурации GitLab
     environment:
-      # Пароль root из .env файла (встроенный механизм GitLab)
       GITLAB_ROOT_PASSWORD: ${GITLAB_ROOT_PASSWORD}
-      # GitHub токен для CI/CD
       GITHUB_TOKEN: ${GITHUB_TOKEN}
-      # Yandex Cloud S3 credentials для terraform state
       YC_ACCESS_KEY_ID: ${YC_ACCESS_KEY_ID}
       YC_SECRET_ACCESS_KEY: ${YC_SECRET_ACCESS_KEY}
       YC_S3_BUCKET: ${YC_S3_BUCKET}
       YC_S3_ENDPOINT: ${YC_S3_ENDPOINT}
-      # Внешний URL для доступа к GitLab
       GITLAB_OMNIBUS_CONFIG: |
         # Внешний URL (используется для генерации ссылок в UI)
         external_url 'http://localhost:8929'
         
-        # URL для клонирования репозиториев (для CI/CD runner'ов)
-        gitlab_rails['gitlab_ssh_host'] = 'gitlab'
-        gitlab_rails['gitlab_host'] = 'gitlab'
+        # URL для клонирования репозиториев
+        gitlab_rails['gitlab_ssh_host'] = 'localhost'
+        gitlab_rails['gitlab_host'] = 'localhost'
         gitlab_rails['gitlab_port'] = 8929
         
-        # Отключаем встроенный NGINX на порту 80, используем 8929
+        # NGINX на порту 8929
         nginx['listen_port'] = 8929
         nginx['listen_https'] = false
         
-        # Отключаем Registry (не нужен для базового использования)
+        # Отключаем Registry
         registry['enable'] = false
         
         # Отключаем мониторинг для экономии ресурсов
@@ -63,27 +64,11 @@ services:
         puma['worker_processes'] = 2
         sidekiq['concurrency'] = 5
 
-    # Порты: GitLab Web UI и SSH
-    ports:
-      # Web UI на порту 8929
-      - "8929:8929"
-      # SSH для Git операций
-      - "2224:22"
-
-    # Volumes для данных GitLab
+    # Volumes для данных GitLab (сохраняются между перезапусками)
     volumes:
-      # Данные GitLab (сохраняются между перезапусками, удаляются при down -v)
       - gitlab_data:/var/opt/gitlab
       - gitlab_config:/etc/gitlab
       - gitlab_logs:/var/log/gitlab
-
-    # Сети
-    networks:
-      - gitlab_network
-
-    # Дополнительные хосты для доступа к Proxmox/LXC нодам
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
     # Healthcheck для проверки готовности
     healthcheck:
@@ -93,7 +78,7 @@ services:
       retries: 30
       start_period: 600s
 
-    # Ограничения ресурсов (GitLab требователен к ресурсам)
+    # Ограничения ресурсов
     deploy:
       resources:
         limits:
@@ -105,55 +90,37 @@ services:
   # GitLab Runner — исполнитель CI/CD пайплайнов
   # ---------------------------------------------------------------------------
   gitlab-runner:
-    # Образ GitLab Runner
     image: gitlab/gitlab-runner:latest
     container_name: gitlab-runner
     restart: unless-stopped
 
-    # Зависимость от GitLab (не ждём healthcheck, runner сам дождётся GitLab)
+    # Режим сети host — видит Proxmox и LXC виртуалки
+    network_mode: host
+
+    # Зависимость от GitLab
     depends_on:
       gitlab:
         condition: service_started
 
     # Volumes
     volumes:
-      # Docker socket для запуска контейнеров
       - /var/run/docker.sock:/var/run/docker.sock
-      # Конфигурация Runner (именованный volume для сохранения между перезапусками)
       - runner_config:/etc/gitlab-runner
-
-    # Сети
-    networks:
-      - gitlab_network
-
-    # Дополнительные хосты для доступа к Proxmox/LXC нодам
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
     # Переменные окружения
     environment:
-      # URL GitLab для регистрации Runner
-      - CI_SERVER_URL=http://gitlab:8929
+      # URL GitLab (localhost т.к. host network)
+      - CI_SERVER_URL=http://localhost:8929
 
 # -----------------------------------------------------------------------------
 # Volumes — для GitLab данных и Runner конфигурации
 # -----------------------------------------------------------------------------
 volumes:
-  # GitLab данные
   gitlab_data:
     name: gitlab_data
   gitlab_config:
     name: gitlab_config
   gitlab_logs:
     name: gitlab_logs
-  # Runner конфигурация
   runner_config:
     name: gitlab_runner_config
-
-# -----------------------------------------------------------------------------
-# Networks — сеть для взаимодействия сервисов
-# -----------------------------------------------------------------------------
-networks:
-  gitlab_network:
-    name: gitlab_network
-    driver: bridge

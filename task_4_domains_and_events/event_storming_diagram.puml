@@ -1,0 +1,29 @@
+@startuml
+' Подключаем стили для Event Storming
+!include https://raw.githubusercontent.com/plantuml-stdlib/EventStorming/master/EventStorming.puml
+
+' Описываем домен (это будет "пузырь" или рамка)
+BoundedContext(Medical_Domain, "Медицинский домен") {
+    ' Агрегат
+    Aggregate(Appointment, "Прием")
+
+    ' Команда -> Агрегат -> Событие
+    Command(BookAppointment, "Записать пациента")
+    BookAppointment --> Appointment
+
+    Event(AppointmentBooked, "Запись создана")
+    Appointment --> AppointmentBooked
+}
+
+BoundedContext(Fintech_Domain, "Финтех домен") {
+    Policy(PaymentPolicy, "При создании записи\nсразу выставить счет")
+    Aggregate(Invoice, "Счет")
+    Event(InvoiceCreated, "Счет выставлен")
+}
+
+' Связь между доменами
+AppointmentBooked --> PaymentPolicy : триггерит
+PaymentPolicy --> Invoice
+Invoice --> InvoiceCreated
+
+@enduml
