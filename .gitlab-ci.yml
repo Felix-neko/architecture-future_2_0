@@ -31,11 +31,11 @@ smoke_test:
   image: alpine:latest
   script:
     - echo "=========================================="
-    - echo "Pipeline: ${PIPELINE_NAME:-Terraform CI/CD}"
-    - echo "Triggered by: ${TRIGGERED_BY:-manual}"
-    - echo "Pipeline ID: $CI_PIPELINE_ID"
-    - echo "Branch: $CI_COMMIT_REF_NAME"
-    - echo "Commit: $CI_COMMIT_SHORT_SHA"
+    - 'echo "Pipeline: ${PIPELINE_NAME:-Terraform CI/CD}"'
+    - 'echo "Triggered by: ${TRIGGERED_BY:-manual}"'
+    - 'echo "Pipeline ID: $CI_PIPELINE_ID"'
+    - 'echo "Branch: $CI_COMMIT_REF_NAME"'
+    - 'echo "Commit: $CI_COMMIT_SHORT_SHA"'
     - echo "=========================================="
 
 terraform_lint:
