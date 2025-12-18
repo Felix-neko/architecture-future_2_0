@@ -46,6 +46,8 @@ if [ ! -f "$PRIVATE_KEY" ]; then
     echo "Генерация SSH-ключей..."
     "$BASEDIR/generate_ssh_keys.sh" --quiet
 fi
+# Гарантируем правильные права на ключ (иначе SSH откажется использовать)
+chmod 600 "$PRIVATE_KEY"
 SSH_PUBKEY=$(cat "$PUBLIC_KEY")
 echo "✓ SSH-ключи готовы"
 

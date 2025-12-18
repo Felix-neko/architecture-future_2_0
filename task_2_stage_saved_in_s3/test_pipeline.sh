@@ -193,18 +193,129 @@ for JOB_ID in $FAILED_JOBS; do
 done
 
 # =============================================================================
+# Шаг 5: Проверка вывода IP-адресов LXC и SSH-подключения
+# =============================================================================
+log_section "Шаг 5: Проверка LXC IP и SSH-подключения"
+
+LXC_INFO_CHECK_PASSED=true
+SSH_CHECK_PASSED=true
+LXC_IPS_FOUND=""
+
+# Получаем логи job show_lxc_info
+SHOW_LXC_JOB_ID=$(echo "$JOBS" | jq -r '.[] | select(.name == "show_lxc_info") | .id')
+
+if [ -n "$SHOW_LXC_JOB_ID" ] && [ "$SHOW_LXC_JOB_ID" != "null" ]; then
+    log_info "Получаем логи job show_lxc_info (ID: $SHOW_LXC_JOB_ID)"
+    
+    SHOW_LXC_LOG=$(curl -s -H "PRIVATE-TOKEN: $ACCESS_TOKEN" \
+        "$GITLAB_URL/api/v4/projects/$PROJECT_ID/jobs/$SHOW_LXC_JOB_ID/trace")
+    
+    # Проверяем наличие маркеров секции IP
+    if echo "$SHOW_LXC_LOG" | grep -q "=== LXC_IPS_START ==="; then
+        log_info "✓ Найден маркер LXC_IPS_START"
+    else
+        log_error "✗ Не найден маркер LXC_IPS_START"
+        LXC_INFO_CHECK_PASSED=false
+    fi
+    
+    if echo "$SHOW_LXC_LOG" | grep -q "=== LXC_IPS_END ==="; then
+        log_info "✓ Найден маркер LXC_IPS_END"
+    else
+        log_error "✗ Не найден маркер LXC_IPS_END"
+        LXC_INFO_CHECK_PASSED=false
+    fi
+    
+    # Проверяем наличие инструкций SSH
+    if echo "$SHOW_LXC_LOG" | grep -q "ssh -i task_1_terraform_module/vm_access_key"; then
+        log_info "✓ Найдены инструкции SSH-подключения"
+    else
+        log_error "✗ Не найдены инструкции SSH-подключения"
+        LXC_INFO_CHECK_PASSED=false
+    fi
+    
+    # Извлекаем IP-адреса из логов
+    LXC_IPS_FOUND=$(echo "$SHOW_LXC_LOG" | grep "LXC_IP:" | sed 's/.*LXC_IP: //' | tr -d ' ')
+    
+    if [ -n "$LXC_IPS_FOUND" ]; then
+        log_info "✓ Найдены IP-адреса LXC:"
+        for IP in $LXC_IPS_FOUND; do
+            echo "    - $IP"
+        done
+    else
+        log_warn "⊕ IP-адреса LXC не найдены (возможно, контейнеры ещё не созданы)"
+    fi
+    
+    # Проверяем SSH-подключение к каждому LXC
+    SSH_KEY="$REPO_ROOT/task_1_terraform_module/vm_access_key"
+    
+    if [ -n "$LXC_IPS_FOUND" ] && [ -f "$SSH_KEY" ]; then
+        log_info "Проверяем SSH-подключение к LXC-контейнерам..."
+        chmod 600 "$SSH_KEY"
+        
+        for IP in $LXC_IPS_FOUND; do
+            echo ""
+            log_info "Проверка SSH к $IP..."
+            
+            # Проверяем подключение с таймаутом 10 секунд
+            if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes \
+                root@"$IP" "echo 'SSH_TEST_SUCCESS'" 2>/dev/null | grep -q "SSH_TEST_SUCCESS"; then
+                log_info "✓ SSH-подключение к $IP успешно"
+            else
+                log_error "✗ Не удалось подключиться по SSH к $IP"
+                SSH_CHECK_PASSED=false
+            fi
+        done
+    elif [ -z "$LXC_IPS_FOUND" ]; then
+        log_warn "Пропускаем проверку SSH: нет IP-адресов LXC"
+    elif [ ! -f "$SSH_KEY" ]; then
+        log_error "✗ SSH-ключ не найден: $SSH_KEY"
+        SSH_CHECK_PASSED=false
+    fi
+else
+    log_warn "Не найден job show_lxc_info"
+    LXC_INFO_CHECK_PASSED=false
+fi
+
+# =============================================================================
 # Итог
 # =============================================================================
 log_section "Итог"
 
-if [ "$FINAL_STATUS" = "success" ]; then
-    log_info "✓ Pipeline успешно завершён!"
-    log_info "  Имя: $PIPELINE_NAME"
-    log_info "  ID: $PIPELINE_ID"
-    exit 0
-else
+EXIT_CODE=0
+
+if [ "$FINAL_STATUS" != "success" ]; then
     log_error "✗ Pipeline завершился с ошибками"
     log_error "  Статус: $FINAL_STATUS"
     log_error "  URL: $PIPELINE_WEB_URL"
-    exit 1
+    EXIT_CODE=1
 fi
+
+if [ "$LXC_INFO_CHECK_PASSED" = "false" ]; then
+    log_error "✗ Проверка вывода LXC info не пройдена"
+    EXIT_CODE=1
+else
+    log_info "✓ Проверка вывода LXC info пройдена"
+fi
+
+if [ "$SSH_CHECK_PASSED" = "false" ]; then
+    log_error "✗ Проверка SSH-подключения не пройдена"
+    EXIT_CODE=1
+else
+    log_info "✓ Проверка SSH-подключения пройдена"
+fi
+
+if [ $EXIT_CODE -eq 0 ]; then
+    log_info "✓ Pipeline успешно завершён!"
+    log_info "  Имя: $PIPELINE_NAME"
+    log_info "  ID: $PIPELINE_ID"
+    
+    if [ -n "$LXC_IPS_FOUND" ]; then
+        echo ""
+        log_info "LXC-контейнеры доступны по SSH:"
+        for IP in $LXC_IPS_FOUND; do
+            echo "  ssh -i task_1_terraform_module/vm_access_key root@$IP"
+        done
+    fi
+fi
+
+exit $EXIT_CODE
