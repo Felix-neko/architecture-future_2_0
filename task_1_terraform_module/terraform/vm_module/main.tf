@@ -215,12 +215,60 @@ resource "proxmox_virtual_environment_download_file" "lxc_template" {
 }
 
 # -----------------------------------------------------------------------------
+# Установка и настройка SSH в LXC-контейнерах (Alpine не имеет SSH по умолчанию)
+# -----------------------------------------------------------------------------
+resource "null_resource" "setup_ssh" {
+  count = local.placement_error == "" ? var.lxc_count : 0
+
+  depends_on = [proxmox_virtual_environment_container.lxc]
+
+  # Триггер для пересоздания при изменении контейнера
+  triggers = {
+    container_id = proxmox_virtual_environment_container.lxc[count.index].vm_id
+  }
+
+  # Подключаемся к Proxmox-ноде и устанавливаем SSH в контейнере
+  provisioner "remote-exec" {
+    inline = [
+      # Ждём запуска контейнера
+      "sleep 5",
+      # Настраиваем консоль для работы через веб-интерфейс Proxmox (cmode: shell запускает shell напрямую)
+      "pct set ${var.start_vmid + count.index} -cmode shell",
+      # Устанавливаем openssh в Alpine контейнере
+      "pct exec ${var.start_vmid + count.index} -- apk add --no-cache openssh",
+      # Генерируем host keys
+      "pct exec ${var.start_vmid + count.index} -- ssh-keygen -A",
+      # Разрешаем root login
+      "pct exec ${var.start_vmid + count.index} -- sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config",
+      "pct exec ${var.start_vmid + count.index} -- sed -i 's/PermitRootLogin no/PermitRootLogin yes/' /etc/ssh/sshd_config",
+      # Добавляем SSH-ключ для root
+      "pct exec ${var.start_vmid + count.index} -- mkdir -p /root/.ssh",
+      "pct exec ${var.start_vmid + count.index} -- chmod 700 /root/.ssh",
+      "pct exec ${var.start_vmid + count.index} -- sh -c 'echo \"${local.ssh_key}\" > /root/.ssh/authorized_keys'",
+      "pct exec ${var.start_vmid + count.index} -- chmod 600 /root/.ssh/authorized_keys",
+      # Запускаем SSH-сервер
+      "pct exec ${var.start_vmid + count.index} -- rc-update add sshd default",
+      "pct exec ${var.start_vmid + count.index} -- rc-service sshd start || pct exec ${var.start_vmid + count.index} -- /usr/sbin/sshd",
+      # Устанавливаем пароль root для входа через консоль Proxmox Web UI
+      "pct exec ${var.start_vmid + count.index} -- sh -c 'echo \"root:mega_root_password\" | chpasswd'"
+    ]
+
+    connection {
+      type     = "ssh"
+      host     = local.master_ip
+      user     = "root"
+      password = var.proxmox_root_password
+    }
+  }
+}
+
+# -----------------------------------------------------------------------------
 # Сохранение IP-адресов контейнеров в файл
 # -----------------------------------------------------------------------------
 resource "local_file" "lxc_ips" {
   count = local.placement_error == "" && var.lxc_count > 0 ? 1 : 0
 
-  depends_on = [proxmox_virtual_environment_container.lxc]
+  depends_on = [proxmox_virtual_environment_container.lxc, null_resource.setup_ssh]
 
   filename = local.lxc_ips_file
   content  = join("\n", [for ip in local.container_ips : split("/", ip)[0]])

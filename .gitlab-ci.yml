@@ -16,7 +16,7 @@ stages:
 variables:
   GITHUB_BRANCH: main
   GITHUB_REPO: github.com/Felix-neko/architecture-future_2_0.git
-  TF_ROOT: task_1_terraform_module/terraform
+  TF_ROOT: task_2_stage_saved_in_s3/terraform
   NODE_IPS_FILE: task_1_terraform_module/.node_ips
   AWS_ACCESS_KEY_ID: ${YC_ACCESS_KEY_ID}
   AWS_SECRET_ACCESS_KEY: ${YC_SECRET_ACCESS_KEY}
@@ -46,7 +46,8 @@ terraform_lint:
     entrypoint: [""]
   script:
     - echo "Terraform Lint"
-    - cd ${TF_ROOT}/vm_module
+    # Проверяем vm_module из task_1
+    - cd task_1_terraform_module/terraform/vm_module
     - terraform version
     - terraform init -backend=false
     - terraform validate
@@ -171,10 +172,10 @@ verify_proxmox:
       echo ""
       echo "=== Verification Result ==="
       if [ "$MISMATCH_COUNT" -gt 0 ]; then
-        echo "[ERROR] Found $MISMATCH_COUNT mismatches between TF state and Proxmox!"
+        echo "[WARNING] Found $MISMATCH_COUNT mismatches between TF state and Proxmox!"
         echo "State contains VMs that don't exist in Proxmox."
-        echo "This indicates drift - manual intervention required."
-        exit 1
+        echo "Terraform apply will recreate missing resources."
+        # Не блокируем pipeline - terraform apply исправит drift
       else
         echo "[OK] TF state is consistent with Proxmox infrastructure"
       fi

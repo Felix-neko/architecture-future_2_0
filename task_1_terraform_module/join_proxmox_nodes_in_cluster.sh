@@ -57,8 +57,9 @@ echo "=== Поиск Proxmox-нод ==="
 
 # Если есть сохранённые данные от create_proxmox_nodes.sh
 if [ -f "$BASEDIR/.node_ips" ] && [ -f "$BASEDIR/.node_names" ]; then
-    read -ra NODE_IPS <<< "$(cat "$BASEDIR/.node_ips")"
-    read -ra NODE_NAMES <<< "$(cat "$BASEDIR/.node_names")"
+    # Читаем файлы построчно (формат: по одному значению на строку)
+    mapfile -t NODE_IPS < "$BASEDIR/.node_ips"
+    mapfile -t NODE_NAMES < "$BASEDIR/.node_names"
 else
     # Автоопределение нод по virsh
     declare -a NODE_IPS

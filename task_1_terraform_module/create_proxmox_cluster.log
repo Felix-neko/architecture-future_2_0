@@ -1,0 +1,738 @@
+/home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/create_proxmox_cluster.sh
+========================================
+Создание Proxmox-кластера
+========================================
+  Кластер:    pve-cluster
+  Нод:        3
+  CPU/нода:   5
+  RAM/нода:   16384 MB
+  Disk/нода:  80G
+  Пароль:     mega_root_password
+========================================
+
+=== Этап 1: Создание Proxmox-нод ===
+========================================
+Создание Proxmox-нод
+========================================
+  Нод:        3
+  CPU/нода:   5
+  RAM/нода:   16384 MB
+  Disk/нода:  80G
+  Пароль:     mega_root_password
+========================================
+
+=== Шаг 1: Очистка старых VM ===
+========================================
+Удаление всех виртуальных машин
+========================================
+
+Найдены следующие ВМ:
+--------------------------------
+  pve-node-1 (running)
+  pve-node-2 (running)
+  pve-node-3 (running)
+
+
+Удаление ВМ...
+--------------------------------
+  pve-node-1: Domain 'pve-node-1' destroyed
+
+остановлена, Domain 'pve-node-1' has been undefined
+Volume 'sda'(/home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/pve-node-1.qcow2) removed.
+
+удалена ✓
+  pve-node-2: Domain 'pve-node-2' destroyed
+
+остановлена, Domain 'pve-node-2' has been undefined
+Volume 'sda'(/home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/pve-node-2.qcow2) removed.
+
+удалена ✓
+  pve-node-3: Domain 'pve-node-3' destroyed
+
+остановлена, Domain 'pve-node-3' has been undefined
+Volume 'sda'(/home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/pve-node-3.qcow2) removed.
+
+удалена ✓
+
+========================================
+✓ Все ВМ удалены
+========================================
+
+=== Шаг 2: Создание Proxmox-нод ===
+
+--- Создание ноды 1/3: pve-node-1 ---
+========================================
+Установка Proxmox VE 9.1 из ISO
+========================================
+  VM:       pve-node-1
+  vCPUs:    5
+  RAM:      16384 MB
+  Disk:     80G
+  Password: mega_root_password
+========================================
+✓ SSH-ключи готовы
+Настройка libvirt...
+
+Network default marked as autostarted
+
+Удаление старой VM (если была)...
+
+
+✓ ISO: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/proxmox-ve_9.1-1.iso
+Создание автоматического ISO для pve-node-1...
+  Извлечение ISO...
+  Создание ISO...
+✓ Автоматический ISO создан: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/proxmox-ve_9.1-1-auto.iso
+Создание диска VM...
+Formatting '/home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/pve-node-1.qcow2', fmt=qcow2 cluster_size=65536 extended_l2=off compression_type=zlib size=85899345920 lazy_refcounts=off refcount_bits=16
+Запуск VM pve-node-1...
+
+Starting install...
+Creating domain...                                                                                                                                                                                                                     |    0 B  00:00:00
+
+Domain is still running. Installation may be in progress.
+You can reconnect to the console to complete the installation process.
+✓ VM запущена
+  VNC консоль: virt-viewer pve-node-1
+  MAC: 52:54:00:d0:34:a8
+
+Ожидание установки Proxmox VE (10-25 минут)...
+Консоль: virt-viewer pve-node-1
+
+[0 сек] Ожидание IP... (VM: running, перезагрузок: 0)
+[10 сек] Ожидание IP... (VM: running, перезагрузок: 0)
+[20 сек] IP: 192.168.122.232 - ожидание SSH...
+[30 сек] IP: 192.168.122.232 - ожидание SSH...
+[40 сек] IP: 192.168.122.232 - ожидание SSH...
+[50 сек] IP: 192.168.122.232 - ожидание SSH...
+[60 сек] IP: 192.168.122.232 - ожидание SSH...
+  [DEBUG] Скриншот: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/debug-screenshots/pve-node-1-60s.png
+[70 сек] IP: 192.168.122.232 - ожидание SSH...
+[80 сек] IP: 192.168.122.232 - ожидание SSH...
+[90 сек] IP: 192.168.122.232 - ожидание SSH...
+[100 сек] IP: 192.168.122.232 - ожидание SSH...
+[110 сек] IP: 192.168.122.232 - ожидание SSH...
+[120 сек] IP: 192.168.122.232 - ожидание SSH...
+  [DEBUG] Скриншот: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/debug-screenshots/pve-node-1-120s.png
+[130 сек] IP: 192.168.122.232 - ожидание SSH...
+[140 сек] VM выключена (перезагрузка #1), запускаем...
+Domain 'pve-node-1' started
+
+[140 сек] IP: 192.168.122.232 - ожидание SSH...
+
+========================================
+✓ SSH доступен!
+========================================
+Версия Proxmox: pve-manager/9.1.1/42db4a6cf33dac83 (running kernel: 6.17.2-1-pve)
+
+Проверка веб-интерфейса Proxmox...
+✓ Веб-интерфейс Proxmox доступен!
+
+========================================
+✓ Proxmox VE установлен успешно!
+========================================
+
+Подключение:
+  SSH:  ssh -i /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/vm_access_key root@192.168.122.232
+  Web:  https://192.168.122.232:8006
+  Логин: root / mega_root_password
+
+IP-адрес: 192.168.122.232
+========================================
+✓ Нода pve-node-1 создана с IP: 192.168.122.232
+
+--- Создание ноды 2/3: pve-node-2 ---
+========================================
+Установка Proxmox VE 9.1 из ISO
+========================================
+  VM:       pve-node-2
+  vCPUs:    5
+  RAM:      16384 MB
+  Disk:     80G
+  Password: mega_root_password
+========================================
+✓ SSH-ключи готовы
+Настройка libvirt...
+
+Network default marked as autostarted
+
+Удаление старой VM (если была)...
+
+
+✓ ISO: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/proxmox-ve_9.1-1.iso
+Создание автоматического ISO для pve-node-2...
+  Извлечение ISO...
+  Создание ISO...
+✓ Автоматический ISO создан: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/proxmox-ve_9.1-1-auto.iso
+Создание диска VM...
+Formatting '/home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/pve-node-2.qcow2', fmt=qcow2 cluster_size=65536 extended_l2=off compression_type=zlib size=85899345920 lazy_refcounts=off refcount_bits=16
+Запуск VM pve-node-2...
+
+Starting install...
+Creating domain...                                                                                                                                                                                                                     |    0 B  00:00:00
+
+Domain is still running. Installation may be in progress.
+You can reconnect to the console to complete the installation process.
+✓ VM запущена
+  VNC консоль: virt-viewer pve-node-2
+  MAC: 52:54:00:0e:01:8e
+
+Ожидание установки Proxmox VE (10-25 минут)...
+Консоль: virt-viewer pve-node-2
+
+[0 сек] Ожидание IP... (VM: running, перезагрузок: 0)
+[10 сек] Ожидание IP... (VM: running, перезагрузок: 0)
+[20 сек] IP: 192.168.122.83 - ожидание SSH...
+[30 сек] IP: 192.168.122.83 - ожидание SSH...
+[40 сек] IP: 192.168.122.83 - ожидание SSH...
+[50 сек] IP: 192.168.122.83 - ожидание SSH...
+[60 сек] IP: 192.168.122.83 - ожидание SSH...
+  [DEBUG] Скриншот: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/debug-screenshots/pve-node-2-60s.png
+[70 сек] IP: 192.168.122.83 - ожидание SSH...
+[80 сек] IP: 192.168.122.83 - ожидание SSH...
+[90 сек] IP: 192.168.122.83 - ожидание SSH...
+[100 сек] IP: 192.168.122.83 - ожидание SSH...
+[110 сек] IP: 192.168.122.83 - ожидание SSH...
+[120 сек] IP: 192.168.122.83 - ожидание SSH...
+  [DEBUG] Скриншот: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/debug-screenshots/pve-node-2-120s.png
+[130 сек] IP: 192.168.122.83 - ожидание SSH...
+[140 сек] VM выключена (перезагрузка #1), запускаем...
+Domain 'pve-node-2' started
+
+
+========================================
+✓ SSH доступен!
+========================================
+Версия Proxmox: pve-manager/9.1.1/42db4a6cf33dac83 (running kernel: 6.17.2-1-pve)
+
+Проверка веб-интерфейса Proxmox...
+  [1/12] Ожидание веб-интерфейса...
+✓ Веб-интерфейс Proxmox доступен!
+
+========================================
+✓ Proxmox VE установлен успешно!
+========================================
+
+Подключение:
+  SSH:  ssh -i /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/vm_access_key root@192.168.122.83
+  Web:  https://192.168.122.83:8006
+  Логин: root / mega_root_password
+
+IP-адрес: 192.168.122.83
+========================================
+✓ Нода pve-node-2 создана с IP: 192.168.122.83
+
+--- Создание ноды 3/3: pve-node-3 ---
+========================================
+Установка Proxmox VE 9.1 из ISO
+========================================
+  VM:       pve-node-3
+  vCPUs:    5
+  RAM:      16384 MB
+  Disk:     80G
+  Password: mega_root_password
+========================================
+✓ SSH-ключи готовы
+Настройка libvirt...
+
+Network default marked as autostarted
+
+Удаление старой VM (если была)...
+
+
+✓ ISO: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/proxmox-ve_9.1-1.iso
+Создание автоматического ISO для pve-node-3...
+  Извлечение ISO...
+  Создание ISO...
+✓ Автоматический ISO создан: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/proxmox-ve_9.1-1-auto.iso
+Создание диска VM...
+Formatting '/home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/pve-node-3.qcow2', fmt=qcow2 cluster_size=65536 extended_l2=off compression_type=zlib size=85899345920 lazy_refcounts=off refcount_bits=16
+Запуск VM pve-node-3...
+
+Starting install...
+Creating domain...                                                                                                                                                                                                                     |    0 B  00:00:00
+
+Domain is still running. Installation may be in progress.
+You can reconnect to the console to complete the installation process.
+✓ VM запущена
+  VNC консоль: virt-viewer pve-node-3
+  MAC: 52:54:00:6f:70:e7
+
+Ожидание установки Proxmox VE (10-25 минут)...
+Консоль: virt-viewer pve-node-3
+
+[0 сек] Ожидание IP... (VM: running, перезагрузок: 0)
+[10 сек] Ожидание IP... (VM: running, перезагрузок: 0)
+[20 сек] IP: 192.168.122.191 - ожидание SSH...
+[30 сек] IP: 192.168.122.191 - ожидание SSH...
+[40 сек] IP: 192.168.122.191 - ожидание SSH...
+[50 сек] IP: 192.168.122.191 - ожидание SSH...
+[60 сек] IP: 192.168.122.191 - ожидание SSH...
+  [DEBUG] Скриншот: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/debug-screenshots/pve-node-3-60s.png
+[70 сек] IP: 192.168.122.191 - ожидание SSH...
+[80 сек] IP: 192.168.122.191 - ожидание SSH...
+[90 сек] IP: 192.168.122.191 - ожидание SSH...
+[100 сек] IP: 192.168.122.191 - ожидание SSH...
+[110 сек] IP: 192.168.122.191 - ожидание SSH...
+[120 сек] IP: 192.168.122.191 - ожидание SSH...
+  [DEBUG] Скриншот: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/debug-screenshots/pve-node-3-120s.png
+[130 сек] IP: 192.168.122.191 - ожидание SSH...
+[140 сек] IP: 192.168.122.191 - ожидание SSH...
+[150 сек] VM выключена (перезагрузка #1), запускаем...
+Domain 'pve-node-3' started
+
+[150 сек] IP: 192.168.122.191 - ожидание SSH...
+
+========================================
+✓ SSH доступен!
+========================================
+Версия Proxmox: pve-manager/9.1.1/42db4a6cf33dac83 (running kernel: 6.17.2-1-pve)
+
+Проверка веб-интерфейса Proxmox...
+✓ Веб-интерфейс Proxmox доступен!
+
+========================================
+✓ Proxmox VE установлен успешно!
+========================================
+
+Подключение:
+  SSH:  ssh -i /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/vm_access_key root@192.168.122.191
+  Web:  https://192.168.122.191:8006
+  Логин: root / mega_root_password
+
+IP-адрес: 192.168.122.191
+========================================
+✓ Нода pve-node-3 создана с IP: 192.168.122.191
+
+=== Шаг 3: Проверка веб-интерфейса ===
+✓ pve-node-1 (192.168.122.232): веб-интерфейс доступен
+✓ pve-node-2 (192.168.122.83): веб-интерфейс доступен
+✓ pve-node-3 (192.168.122.191): веб-интерфейс доступен
+
+========================================
+✓ Все 3 Proxmox-нод созданы успешно!
+========================================
+
+Созданные ноды:
+  pve-node-1: https://192.168.122.232:8006
+  pve-node-2: https://192.168.122.83:8006
+  pve-node-3: https://192.168.122.191:8006
+
+Подключение по SSH:
+  ssh -i /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/vm_access_key root@<IP>
+
+Логин в веб-интерфейс:
+  Пользователь: root
+  Пароль: mega_root_password
+
+Для объединения нод в кластер запустите:
+  ./join_proxmox_cluster.sh
+========================================
+Сохранены файлы: /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/.node_ips, /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/.node_names
+
+=== Этап 2: Объединение нод в кластер ===
+=== Поиск Proxmox-нод ===
+Найдено нод: 3
+  pve-node-1: 192.168.122.232
+  pve-node-2: 192.168.122.83
+  pve-node-3: 192.168.122.191
+
+========================================
+Объединение нод в кластер 'pve-cluster'
+========================================
+  Мастер-нода: pve-node-1 (192.168.122.232)
+  Всего нод:   3
+========================================
+
+=== Шаг 1: Проверка и исправление hostname ===
+Проверка hostname на pve-node-1 (192.168.122.232)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.232' (ED25519) to the list of known hosts.
+Linux pve-node-1 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+  ✓ Hostname корректен: pve-node-1
+Проверка hostname на pve-node-2 (192.168.122.83)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.83' (ED25519) to the list of known hosts.
+Linux pve-node-2 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+  ✓ Hostname корректен: pve-node-2
+Проверка hostname на pve-node-3 (192.168.122.191)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.191' (ED25519) to the list of known hosts.
+Linux pve-node-3 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+  ✓ Hostname корректен: pve-node-3
+
+=== Шаг 2: Очистка кластерной конфигурации ===
+Очистка pve-node-1 (192.168.122.232)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.232' (ED25519) to the list of known hosts.
+Linux pve-node-1 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+[main] notice: resolved node name 'pve-node-1' to '192.168.122.232' for default node IP address
+  ✓ Очищено
+Очистка pve-node-2 (192.168.122.83)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.83' (ED25519) to the list of known hosts.
+Linux pve-node-2 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+[main] notice: resolved node name 'pve-node-2' to '192.168.122.83' for default node IP address
+  ✓ Очищено
+Очистка pve-node-3 (192.168.122.191)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.191' (ED25519) to the list of known hosts.
+Linux pve-node-3 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+[main] notice: resolved node name 'pve-node-3' to '192.168.122.191' for default node IP address
+  ✓ Очищено
+
+=== Шаг 3: Создание кластера 'pve-cluster' ===
+Warning: Permanently added '192.168.122.232' (ED25519) to the list of known hosts.
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LC_CTYPE = (unset),
+        LC_NUMERIC = "ru_RU.UTF-8",
+        LC_COLLATE = (unset),
+        LC_TIME = "ru_RU.UTF-8",
+        LC_MESSAGES = (unset),
+        LC_MONETARY = "ru_RU.UTF-8",
+        LC_ADDRESS = "ru_RU.UTF-8",
+        LC_IDENTIFICATION = "ru_RU.UTF-8",
+        LC_MEASUREMENT = "ru_RU.UTF-8",
+        LC_PAPER = "ru_RU.UTF-8",
+        LC_TELEPHONE = "ru_RU.UTF-8",
+        LC_NAME = "ru_RU.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to a fallback locale ("en_US.UTF-8").
+Corosync Cluster Engine Authentication key generator.
+Gathering 2048 bits for key from /dev/urandom.
+Writing corosync key to /etc/corosync/authkey.
+Writing corosync config to /etc/pve/corosync.conf
+Restart corosync and cluster filesystem
+Проверка статуса...
+Cluster information
+-------------------
+Name:             pve-cluster
+Config Version:   1
+Transport:        knet
+Secure auth:      on
+
+Quorum information
+------------------
+Date:             Fri Dec 19 03:03:29 2025
+Quorum provider:  corosync_votequorum
+Nodes:            1
+Node ID:          0x00000001
+Ring ID:          1.5
+Quorate:          Yes
+
+Votequorum information
+----------------------
+Expected votes:   1
+Highest expected: 1
+Total votes:      1
+Quorum:           1
+Flags:            Quorate
+
+Membership information
+----------------------
+    Nodeid      Votes Name
+0x00000001          1 192.168.122.232 (local)
+✓ Кластер pve-cluster создан на pve-node-1
+Ожидание стабилизации кластера (15 сек)...
+
+=== Шаг 4: Присоединение нод к кластеру ===
+
+Присоединение pve-node-2 (192.168.122.83)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.83' (ED25519) to the list of known hosts.
+Linux pve-node-2 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+spawn pvecm add 192.168.122.232
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LC_CTYPE = (unset),
+        LC_NUMERIC = "ru_RU.UTF-8",
+        LC_COLLATE = (unset),
+        LC_TIME = "ru_RU.UTF-8",
+        LC_MESSAGES = (unset),
+        LC_MONETARY = "ru_RU.UTF-8",
+        LC_ADDRESS = "ru_RU.UTF-8",
+        LC_IDENTIFICATION = "ru_RU.UTF-8",
+        LC_MEASUREMENT = "ru_RU.UTF-8",
+        LC_PAPER = "ru_RU.UTF-8",
+        LC_TELEPHONE = "ru_RU.UTF-8",
+        LC_NAME = "ru_RU.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to a fallback locale ("en_US.UTF-8").
+Please enter superuser (root) password for '192.168.122.232': ******************
+Establishing API connection with host '192.168.122.232'
+The authenticity of host '192.168.122.232' can't be established.
+X509 SHA256 key fingerprint is AA:9B:74:3C:DB:9A:52:9A:4C:B8:8E:0B:21:B6:C8:E7:8B:11:92:B6:07:42:7F:07:CA:53:0D:09:A9:C8:F3:B5.
+Are you sure you want to continue connecting (yes/no)? yes
+Login succeeded.
+check cluster join API version
+No cluster network links passed explicitly, fallback to local node IP '192.168.122.83'
+Request addition of this node
+Join request OK, finishing setup locally
+stopping pve-cluster service
+backup old database to '/var/lib/pve-cluster/backup/config-1766102631.sql.gz'
+waiting for quorum...OK
+(re)generate node files
+generate new node certificate
+merge authorized SSH keys
+generated new node certificate, restart pveproxy and pvedaemon services
+successfully added node 'pve-node-2' to cluster.
+✓ pve-node-2 присоединена
+
+Присоединение pve-node-3 (192.168.122.191)...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.191' (ED25519) to the list of known hosts.
+Linux pve-node-3 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+spawn pvecm add 192.168.122.232
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LC_CTYPE = (unset),
+        LC_NUMERIC = "ru_RU.UTF-8",
+        LC_COLLATE = (unset),
+        LC_TIME = "ru_RU.UTF-8",
+        LC_MESSAGES = (unset),
+        LC_MONETARY = "ru_RU.UTF-8",
+        LC_ADDRESS = "ru_RU.UTF-8",
+        LC_IDENTIFICATION = "ru_RU.UTF-8",
+        LC_MEASUREMENT = "ru_RU.UTF-8",
+        LC_PAPER = "ru_RU.UTF-8",
+        LC_TELEPHONE = "ru_RU.UTF-8",
+        LC_NAME = "ru_RU.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to a fallback locale ("en_US.UTF-8").
+Please enter superuser (root) password for '192.168.122.232': ******************
+Establishing API connection with host '192.168.122.232'
+The authenticity of host '192.168.122.232' can't be established.
+X509 SHA256 key fingerprint is AA:9B:74:3C:DB:9A:52:9A:4C:B8:8E:0B:21:B6:C8:E7:8B:11:92:B6:07:42:7F:07:CA:53:0D:09:A9:C8:F3:B5.
+Are you sure you want to continue connecting (yes/no)? yes
+Login succeeded.
+check cluster join API version
+No cluster network links passed explicitly, fallback to local node IP '192.168.122.191'
+Request addition of this node
+Join request OK, finishing setup locally
+stopping pve-cluster service
+backup old database to '/var/lib/pve-cluster/backup/config-1766102650.sql.gz'
+waiting for quorum...OK
+(re)generate node files
+generate new node certificate
+merge authorized SSH keys
+generated new node certificate, restart pveproxy and pvedaemon services
+successfully added node 'pve-node-3' to cluster.
+✓ pve-node-3 присоединена
+
+=== Шаг 5: Проверка статуса кластера ===
+
+Membership information
+----------------------
+    Nodeid      Votes Name
+         1          1 pve-node-1 (local)
+         2          1 pve-node-2
+         3          1 pve-node-3
+
+=== Шаг 6: Тестовое создание LXC-контейнера ===
+Скачивание шаблона...
+downloading http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz to /var/lib/vz/template/cache/alpine-3.22-default_20250617_amd64.tar.xz
+--2025-12-19 03:04:26--  http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz
+Resolving download.proxmox.com (download.proxmox.com)... 212.224.123.70, 2a0e:9880:304::184
+Connecting to download.proxmox.com (download.proxmox.com)|212.224.123.70|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 3271244 (3.1M) [application/octet-stream]
+Saving to: '/var/lib/vz/template/cache/alpine-3.22-default_20250617_amd64.tar.xz.tmp_dwnl.3751'
+     0K ...                                100% 4.67M=0.7s
+2025-12-19 03:04:27 (4.67 MB/s) - '/var/lib/vz/template/cache/alpine-3.22-default_20250617_amd64.tar.xz.tmp_dwnl.3751' saved [3271244/3271244]
+calculating checksum...OK, checksum verified
+download of 'http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz' to '/var/lib/vz/template/cache/alpine-3.22-default_20250617_amd64.tar.xz' finished
+Создание контейнера...
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Warning: Permanently added '192.168.122.232' (ED25519) to the list of known hosts.
+Linux pve-node-1 6.17.2-1-pve #1 SMP PREEMPT_DYNAMIC PMX 6.17.2-1 (2025-10-21T11:55Z) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LC_CTYPE = (unset),
+        LC_NUMERIC = "ru_RU.UTF-8",
+        LC_COLLATE = (unset),
+        LC_TIME = "ru_RU.UTF-8",
+        LC_MESSAGES = (unset),
+        LC_MONETARY = "ru_RU.UTF-8",
+        LC_ADDRESS = "ru_RU.UTF-8",
+        LC_IDENTIFICATION = "ru_RU.UTF-8",
+        LC_MEASUREMENT = "ru_RU.UTF-8",
+        LC_PAPER = "ru_RU.UTF-8",
+        LC_TELEPHONE = "ru_RU.UTF-8",
+        LC_NAME = "ru_RU.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to a fallback locale ("en_US.UTF-8").
+  Logical volume "vm-999-disk-0" created.
+  Logical volume pve/vm-999-disk-0 changed.
+Creating filesystem with 262144 4k blocks and 65536 inodes
+Filesystem UUID: 05254402-29ba-42f4-a4c6-14eb7cc8c29d
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376
+extracting archive '/var/lib/vz/template/cache/alpine-3.22-default_20250617_amd64.tar.xz'
+Total bytes read: 11509760 (11MiB, 85MiB/s)
+Detected container architecture: amd64
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LC_CTYPE = (unset),
+        LC_NUMERIC = "ru_RU.UTF-8",
+        LC_COLLATE = (unset),
+        LC_TIME = "ru_RU.UTF-8",
+        LC_MESSAGES = (unset),
+        LC_MONETARY = "ru_RU.UTF-8",
+        LC_ADDRESS = "ru_RU.UTF-8",
+        LC_IDENTIFICATION = "ru_RU.UTF-8",
+        LC_MEASUREMENT = "ru_RU.UTF-8",
+        LC_PAPER = "ru_RU.UTF-8",
+        LC_TELEPHONE = "ru_RU.UTF-8",
+        LC_NAME = "ru_RU.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to a fallback locale ("en_US.UTF-8").
+✓ Тестовый LXC-контейнер создан успешно
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = (unset),
+        LC_CTYPE = (unset),
+        LC_NUMERIC = "ru_RU.UTF-8",
+        LC_COLLATE = (unset),
+        LC_TIME = "ru_RU.UTF-8",
+        LC_MESSAGES = (unset),
+        LC_MONETARY = "ru_RU.UTF-8",
+        LC_ADDRESS = "ru_RU.UTF-8",
+        LC_IDENTIFICATION = "ru_RU.UTF-8",
+        LC_MEASUREMENT = "ru_RU.UTF-8",
+        LC_PAPER = "ru_RU.UTF-8",
+        LC_TELEPHONE = "ru_RU.UTF-8",
+        LC_NAME = "ru_RU.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to a fallback locale ("en_US.UTF-8").
+999        stopped                 test-lxc
+  Logical volume "vm-999-disk-0" successfully removed.
+✓ Тестовый контейнер удалён
+
+========================================
+✓ Кластер 'pve-cluster' настроен!
+========================================
+
+Ноды кластера:
+  pve-node-1: https://192.168.122.232:8006
+  pve-node-2: https://192.168.122.83:8006
+  pve-node-3: https://192.168.122.191:8006
+
+Управление кластером:
+  Статус: ssh -i /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/vm_access_key root@192.168.122.232 'pvecm status'
+  Ноды:   ssh -i /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/vm_access_key root@192.168.122.232 'pvecm nodes'
+
+Создание LXC:
+  ./create_internal_vms.sh -n 1
+
+Удаление LXC:
+  ./delete_internal_vms.sh
+========================================
+
+=== Файлы с информацией о нодах ===
+✓ /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/.node_ips:
+    192.168.122.232
+    192.168.122.83
+    192.168.122.191
+
+✓ /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/.node_names:
+    pve-node-1
+    pve-node-2
+    pve-node-3
+
+=== Проверка количества нод в кластере ===
+Нод в кластере Proxmox: 3
+Ожидаемое количество:   3
+✓ Все 3 нод успешно объединены в кластер!
+
+========================================
+✓ Proxmox-кластер 'pve-cluster' готов!
+========================================
+
+Для использования в terraform-модуле:
+  Файл IP-адресов:  /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/.node_ips
+  Файл имён нод:    /home/felix/Projects/yandex_swa_pro/architecture-future_2_0/task_1_terraform_module/.node_names
+
+Process finished with exit code 0
+
+

@@ -167,6 +167,8 @@ echo "Для объединения нод в кластер запустите:
 echo "  ./join_proxmox_cluster.sh"
 echo "========================================"
 
-# Сохраняем информацию о нодах для join_proxmox_cluster.sh
-echo "${NODE_IPS[@]}" > "$BASEDIR/.node_ips"
-echo "${NODE_NAMES[@]}" > "$BASEDIR/.node_names"
+# Сохраняем информацию о нодах для join_proxmox_cluster.sh и terraform-модуля
+# Формат: по одному значению на строку (совместимо с terraform)
+printf '%s\n' "${NODE_IPS[@]}" > "$BASEDIR/.node_ips"
+printf '%s\n' "${NODE_NAMES[@]}" > "$BASEDIR/.node_names"
+echo "Сохранены файлы: $BASEDIR/.node_ips, $BASEDIR/.node_names"

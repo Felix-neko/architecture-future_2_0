@@ -7,5 +7,6 @@
 /task_1_terraform_module/cloud-init-pve-auto/
 /task_1_terraform_module/debug-screenshots/
 /task_2_stage_saved_in_s3/.env
-/task_1_terraform_module/.node_ips
-/task_1_terraform_module/.node_names
+# .node_ips и .node_names нужны для CI/CD pipeline
+# /task_1_terraform_module/.node_ips
+# /task_1_terraform_module/.node_names
