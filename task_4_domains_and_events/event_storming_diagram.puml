@@ -45,6 +45,15 @@ skinparam rectangle<<external>> {
 
 title Event Storming: Целевая событийная архитектура "Будущее 2.0"
 
+' ==================== ЛЕГЕНДА ====================
+legend right
+  |= Цвет |= Тип элемента |= Описание |
+  |<#FF6600> | **Событие (Event)** | Факт, произошедший в системе |
+  |<#FFD700> | **Агрегат (Aggregate)** | Сущность, над которой выполняется действие |
+  |<#9370DB> | **Политика (Policy)** | Правило: «Если событие A → команда B» |
+  |<#708090> | **Внешняя система** | Kafka, Data Lakehouse |
+endlegend
+
 ' ==================== МЕДИЦИНСКИЕ УСЛУГИ (КЛИНИКИ) ====================
 package "Медицинские услуги (Клиники)" as clinics #E8F5E9 {
     
@@ -99,6 +108,10 @@ package "IT-сервисы (Головной офис)" as platform #F3E5F5 {
     
     rectangle "ETL-процесс\nзавершён" <<event>> as evt_etl_done
     rectangle "Данные\nопубликованы" <<event>> as evt_data_published
+    
+    ' Kafka и Data Lakehouse - часть IT-сервисов
+    rectangle "Apache Kafka\n(Event Bus)" <<external>> as kafka #2F4F4F
+    rectangle "Data Lakehouse\n(MinIO + Iceberg)" <<external>> as lakehouse #2F4F4F
 }
 
 ' ==================== АНАЛИТИКА (ГОЛОВНОЙ ОФИС) ====================
@@ -172,20 +185,37 @@ evt_failure_predicted ..> pol_notify_failure : триггерит
 ' Фарма → Закупки
 evt_tmc_received ..> pol_reorder : проверка запасов
 
-' ==================== KAFKA КАК ШИНА СОБЫТИЙ ====================
-rectangle "Apache Kafka\n(Event Bus)" <<external>> as kafka #2F4F4F
+' ==================== СВЯЗИ С KAFKA И DATA LAKEHOUSE ====================
+' Все события из бизнес-доменов -> Kafka -> Data Lakehouse
+evt_appointment_created ..> kafka : публикует
+evt_appointment_done ..> kafka : публикует
+evt_payment_received ..> kafka : публикует
+evt_credit_approved ..> kafka : публикует
+evt_ai_done ..> kafka : публикует
+evt_pathology_found ..> kafka : публикует
+evt_prod_done ..> kafka : публикует
+evt_order_shipped ..> kafka : публикует
+evt_telemetry ..> kafka : публикует
+evt_elec_done ..> kafka : публикует
 
-evt_appointment_created -[hidden]down- kafka
-evt_payment_received -[hidden]down- kafka
-evt_ai_done -[hidden]down- kafka
-evt_etl_done -[hidden]down- kafka
-evt_telemetry -[hidden]down- kafka
+' Kafka -> Data Lakehouse (IT-сервисы головного офиса)
+kafka --> lakehouse : все события\nсохраняются
+
+' Data Lakehouse -> Аналитика
+lakehouse --> agg_report : данные для\nотчётов
+lakehouse ..> pol_refresh_on_etl : триггерит\nобновление витрин
 
 note bottom of kafka
   Все междоменные события
   проходят через Kafka.
   Подписчики не знают
   об источниках напрямую.
+end note
+
+note bottom of lakehouse
+  Все события хранятся
+  в Data Lakehouse и
+  доступны для аналитики.
 end note
 
 @enduml
