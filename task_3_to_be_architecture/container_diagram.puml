@@ -1,0 +1,116 @@
+@startuml container_diagram
+' Диаграмма контейнеров для целевой архитектуры "Будущее 2.0"
+' Использует C4 Model для структурирования
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_LEFT_RIGHT()
+
+title Диаграмма контейнеров: Целевая архитектура платформы данных "Будущее 2.0"
+
+' Внешние пользователи
+Person(data_engineer, "Дата-инженер", "Разрабатывает ETL-процессы и управляет данными")
+Person(analyst, "Аналитик", "Анализирует данные, строит отчёты")
+Person(dev_team, "Команда разработки подразделения", "Разрабатывает сервисы, использует платформу")
+Person(platform_admin, "Администратор платформы", "Управляет инфраструктурой и доступом")
+
+' ========== MinIO-кластер (отдельный Kubernetes) ==========
+System_Boundary(minio_cluster, "MinIO-кластер (Kubernetes)") {
+    Container(minio, "MinIO", "S3-совместимое хранилище", "Объектное хранилище для сырых данных, PARQUET/ORC-файлов Iceberg-таблиц")
+}
+
+' ========== Spark-кластер (отдельный Kubernetes) ==========
+System_Boundary(spark_cluster, "Spark-кластер (Kubernetes)") {
+    Container(spark_executors, "Spark Executors", "Apache Spark", "Распределённые вычисления над данными в Iceberg-таблицах")
+    Container(spark_shuffle, "Spark Shuffle Service", "Apache Spark", "Сервис перемешивания данных между экзекуторами")
+    Container(ranger, "Apache Ranger", "IAM/ACL", "Управление доступом к Iceberg-таблицам и данным")
+    Container(kyverno_spark, "Kyverno", "Policy Engine", "Политики безопасности: отключение зависших Spark-приложений")
+}
+
+' ========== Kubernetes-кластер общего назначения ==========
+System_Boundary(k8s_general, "Kubernetes-кластер общего назначения") {
+    
+    ' --- Общие сервисы платформы ---
+    Container_Boundary(platform_services, "Платформенные сервисы") {
+        Container(datahub, "DataHub", "Data Catalog", "Каталог данных, управление метаданными, Data Access Workflows")
+        Container(kafka, "Apache Kafka", "Event Streaming", "Событийная шина для асинхронной интеграции между доменами")
+        Container(karapace, "Karapace", "Schema Registry", "Реестр схем для Kafka (Avro/JSON Schema)")
+        Container(redis, "Redis", "In-Memory DB", "Redis Streams для мультитенантной EDA, кэширование")
+        Container(keycloak, "Keycloak", "IAM/SSO", "Единая аутентификация и авторизация пользователей")
+        Container(kerberos, "Kerberos", "KDC", "Аутентификация сервисов (для Spark, Ranger и др.)")
+    }
+    
+    ' --- Инструменты для разработчиков и аналитиков ---
+    Container_Boundary(dev_tools, "Инструменты разработки и аналитики") {
+        Container(coder, "Coder", "Dev Environment", "Удалённые рабочие окружения для разработчиков")
+        Container(jupyterhub, "JupyterHub", "Notebooks", "Интерактивные ноутбуки для прототипирования")
+        Container(trino, "Trino", "SQL Engine", "Федеративные SQL-запросы к данным в Iceberg/ClickHouse/и др.")
+        Container(airflow, "Apache Airflow", "Orchestrator", "Оркестрация ETL-процессов по расписанию")
+    }
+    
+    ' --- GitOps и IaC ---
+    Container_Boundary(gitops, "GitOps / IaC") {
+        Container(gitlab, "GitLab", "VCS + CI/CD", "Репозитории, пайплайны, Terraform для инфраструктуры по требованию")
+        Container(terraform_runner, "Terraform Runner", "IaC", "Выполнение Terraform-планов для создания ВМ и namespace")
+    }
+    
+    ' --- Сервисы бизнес-команд ---
+    Container_Boundary(business_services, "Сервисы бизнес-команд") {
+        Container(clickhouse, "ClickHouse", "OLAP DB", "Аналитические витрины для быстрых запросов")
+        Container(scylladb, "ScyllaDB", "Wide-column DB", "Хранение онлайн-данных с высокой доступностью")
+        Container(business_apps, "Приложения подразделений", "Микросервисы", "Сервисы клиник, банка, фармы, электроники")
+    }
+}
+
+' ========== Инфраструктура по требованию (ProxMox/OpenStack) ==========
+System_Boundary(on_demand_infra, "Инфраструктура по требованию (ProxMox/OpenStack)") {
+    Container(proxmox, "ProxMox/OpenStack", "Гипервизор", "Виртуальные машины по запросу через Terraform")
+    Container(on_demand_k8s, "K8s-кластеры по требованию", "Kubernetes", "Изолированные кластеры для команд подразделений")
+}
+
+' ========== Внешние системы (Legacy) ==========
+System_Ext(legacy_mssql, "MS SQL Server (Legacy)", "Существующее DWH, постепенно выводится")
+System_Ext(legacy_camel, "Apache Camel (Legacy)", "Существующая интеграционная шина, постепенно заменяется")
+
+' ========== Связи ==========
+
+' Пользователи -> Платформа
+Rel(data_engineer, airflow, "Создаёт DAG-и для ETL")
+Rel(data_engineer, jupyterhub, "Прототипирует обработку данных")
+Rel(analyst, trino, "Выполняет SQL-запросы")
+Rel(analyst, datahub, "Ищет данные, запрашивает доступ")
+Rel(dev_team, gitlab, "Коммитит код и Terraform-спеки")
+Rel(dev_team, coder, "Разрабатывает в удалённом окружении")
+Rel(platform_admin, keycloak, "Управляет пользователями и ролями")
+Rel(platform_admin, ranger, "Настраивает политики доступа к данным")
+
+' Spark -> MinIO (Iceberg)
+Rel(spark_executors, minio, "Читает/пишет Iceberg-таблицы", "S3 API")
+Rel(spark_shuffle, spark_executors, "Shuffle-данные")
+Rel(ranger, minio, "Проверяет доступ к объектам")
+
+' Платформенные сервисы
+Rel(datahub, kafka, "Подписывается на метаданные")
+Rel(datahub, karapace, "Получает схемы топиков")
+Rel(airflow, spark_executors, "Запускает Spark-задачи", "Spark Submit")
+Rel(trino, minio, "Читает Iceberg-таблицы", "S3 API")
+Rel(trino, clickhouse, "Федеративные запросы", "JDBC")
+Rel(business_apps, kafka, "Публикует/подписывается на события")
+Rel(business_apps, redis, "Публикует/подписывается (Redis Streams)")
+
+' GitOps
+Rel(gitlab, terraform_runner, "Триггерит Terraform")
+Rel(terraform_runner, proxmox, "Создаёт ВМ")
+Rel(terraform_runner, on_demand_k8s, "Создаёт K8s-кластеры")
+
+' Аутентификация
+Rel(keycloak, kerberos, "Федерация с Kerberos")
+Rel(spark_executors, kerberos, "Аутентификация")
+Rel(trino, keycloak, "SSO")
+
+' Legacy миграция
+Rel(airflow, legacy_mssql, "ETL: извлечение данных (миграция)", "JDBC")
+Rel(legacy_camel, kafka, "Миграция событий (постепенно)")
+
+@enduml

@@ -1,29 +1,191 @@
-@startuml
-' Подключаем стили для Event Storming
-!include https://raw.githubusercontent.com/plantuml-stdlib/EventStorming/master/EventStorming.puml
+@startuml event_storming
+' Event Storming диаграмма для "Будущее 2.0"
+' Цветовая схема: оранжевый = события, синий = команды, жёлтый = агрегаты, фиолетовый = политики
 
-' Описываем домен (это будет "пузырь" или рамка)
-BoundedContext(Medical_Domain, "Медицинский домен") {
-    ' Агрегат
-    Aggregate(Appointment, "Прием")
-
-    ' Команда -> Агрегат -> Событие
-    Command(BookAppointment, "Записать пациента")
-    BookAppointment --> Appointment
-
-    Event(AppointmentBooked, "Запись создана")
-    Appointment --> AppointmentBooked
+skinparam defaultTextAlignment center
+skinparam rectangle {
+    RoundCorner 10
 }
 
-BoundedContext(Fintech_Domain, "Финтех домен") {
-    Policy(PaymentPolicy, "При создании записи\nсразу выставить счет")
-    Aggregate(Invoice, "Счет")
-    Event(InvoiceCreated, "Счет выставлен")
+' === Определение стилей ===
+' События (оранжевые стикеры)
+skinparam rectangle<<event>> {
+    BackgroundColor #FF6600
+    FontColor white
+    BorderColor #CC5500
 }
 
-' Связь между доменами
-AppointmentBooked --> PaymentPolicy : триггерит
-PaymentPolicy --> Invoice
-Invoice --> InvoiceCreated
+' Команды (синие стикеры)
+skinparam rectangle<<command>> {
+    BackgroundColor #4169E1
+    FontColor white
+    BorderColor #2E4A9E
+}
+
+' Агрегаты (жёлтые стикеры)
+skinparam rectangle<<aggregate>> {
+    BackgroundColor #FFD700
+    FontColor black
+    BorderColor #B8860B
+}
+
+' Политики (фиолетовые стикеры)
+skinparam rectangle<<policy>> {
+    BackgroundColor #9370DB
+    FontColor white
+    BorderColor #6A4C93
+}
+
+' Внешние системы (серые)
+skinparam rectangle<<external>> {
+    BackgroundColor #708090
+    FontColor white
+    BorderColor #4A5568
+}
+
+title Event Storming: Целевая событийная архитектура "Будущее 2.0"
+
+' ==================== МЕДИЦИНСКИЕ УСЛУГИ (КЛИНИКИ) ====================
+package "Медицинские услуги (Клиники)" as clinics #E8F5E9 {
+    
+    rectangle "Приём пациента" <<aggregate>> as agg_appointment
+    rectangle "Мед. карта" <<aggregate>> as agg_medcard
+    
+    rectangle "Запись создана" <<event>> as evt_appointment_created
+    rectangle "Приём произведён" <<event>> as evt_appointment_done
+    rectangle "Запись отменена" <<event>> as evt_appointment_cancelled
+    rectangle "Добавлена запись\nв мед. карту" <<event>> as evt_medcard_updated
+    rectangle "Добавлены\nснимки" <<event>> as evt_images_added
+}
+
+' ==================== ФИНТЕХ (БАНК) ====================
+package "Финтех-услуги (Банк)" as bank #E3F2FD {
+    
+    rectangle "Кредит" <<aggregate>> as agg_credit
+    rectangle "Счёт на оплату" <<aggregate>> as agg_invoice
+    rectangle "Платёж" <<aggregate>> as agg_payment
+    
+    rectangle "Заявка на кредит\nсоздана" <<event>> as evt_credit_request
+    rectangle "Кредит одобрен" <<event>> as evt_credit_approved
+    rectangle "Платёж по кредиту\nполучен" <<event>> as evt_credit_payment
+    rectangle "Счёт выставлен" <<event>> as evt_invoice_created
+    rectangle "Оплата получена" <<event>> as evt_payment_received
+    rectangle "Платёж проведён" <<event>> as evt_payment_done
+    
+    rectangle "При записи на приём\n→ выставить счёт" <<policy>> as pol_invoice_on_appointment
+    rectangle "При оплате счёта\n→ уведомить клинику" <<policy>> as pol_notify_on_payment
+}
+
+' ==================== ИИ-СЕРВИСЫ ====================
+package "ИИ-сервисы (ИИ-компания)" as ai #FFF3E0 {
+    
+    rectangle "Заявка на\nанализ" <<aggregate>> as agg_ai_request
+    
+    rectangle "Заявка на ИИ-анализ\nпоступила" <<event>> as evt_ai_request
+    rectangle "ИИ-анализ\nвыполнен" <<event>> as evt_ai_done
+    rectangle "Обнаружены\nпатологии" <<event>> as evt_pathology_found
+    
+    rectangle "При добавлении снимков\n→ запустить ИИ-анализ" <<policy>> as pol_ai_on_images
+}
+
+' ==================== ПЛАТФОРМА ДАННЫХ (ГОЛОВНОЙ ОФИС) ====================
+package "IT-сервисы (Головной офис)" as platform #F3E5F5 {
+    
+    rectangle "Инфра-юнит" <<aggregate>> as agg_infra
+    
+    rectangle "Инфра развёрнута" <<event>> as evt_infra_deployed
+    rectangle "Инфра обновлена" <<event>> as evt_infra_updated
+    rectangle "Сбой развёртывания" <<event>> as evt_infra_failed
+    
+    rectangle "ETL-процесс\nзавершён" <<event>> as evt_etl_done
+    rectangle "Данные\nопубликованы" <<event>> as evt_data_published
+}
+
+' ==================== АНАЛИТИКА (ГОЛОВНОЙ ОФИС) ====================
+package "Аналитика (Головной офис)" as analytics #ECEFF1 {
+    
+    rectangle "Отчёт" <<aggregate>> as agg_report
+    rectangle "Бюджет" <<aggregate>> as agg_budget
+    
+    rectangle "Отчёт\nопубликован" <<event>> as evt_report_published
+    rectangle "Бюджет\nизменён" <<event>> as evt_budget_changed
+    
+    rectangle "При завершении ETL\n→ обновить витрины" <<policy>> as pol_refresh_on_etl
+}
+
+' ==================== ФАРМА ====================
+package "Фармацевтика (Группа компаний)" as pharma #FFEBEE {
+    
+    rectangle "Произв. заказ\n(фарма)" <<aggregate>> as agg_pharma_order
+    rectangle "Партия\nматериалов" <<aggregate>> as agg_batch
+    rectangle "Заказ клиента" <<aggregate>> as agg_customer_order
+    
+    rectangle "Заказ на производство\nсоздан" <<event>> as evt_prod_order_created
+    rectangle "Производство\nзавершено" <<event>> as evt_prod_done
+    rectangle "ТМЦ поступили" <<event>> as evt_tmc_received
+    rectangle "Заказ клиента\nсоздан" <<event>> as evt_cust_order_created
+    rectangle "Заказ отгружен" <<event>> as evt_order_shipped
+    
+    rectangle "При низком запасе\n→ создать закупку" <<policy>> as pol_reorder
+}
+
+' ==================== ЭЛЕКТРОНИКА ====================
+package "Мед. электроника (Производство)" as electronics #E8EAF6 {
+    
+    rectangle "Произв. заказ\n(электр.)" <<aggregate>> as agg_elec_order
+    rectangle "Устройство" <<aggregate>> as agg_device
+    rectangle "Заказ на ремонт" <<aggregate>> as agg_repair
+    
+    rectangle "Производство\nэлектроники завершено" <<event>> as evt_elec_done
+    rectangle "Телеметрия\nполучена" <<event>> as evt_telemetry
+    rectangle "Прогноз\nнеисправности" <<event>> as evt_failure_predicted
+    rectangle "Ремонт завершён" <<event>> as evt_repair_done
+    
+    rectangle "При прогнозе сбоя\n→ уведомить клиента" <<policy>> as pol_notify_failure
+}
+
+' ==================== СВЯЗИ МЕЖДУ ДОМЕНАМИ ====================
+
+' Клиники → Банк
+evt_appointment_created ..> pol_invoice_on_appointment : триггерит
+pol_invoice_on_appointment --> agg_invoice
+agg_invoice --> evt_invoice_created
+
+' Банк → Клиники (обратная связь)
+evt_payment_received ..> pol_notify_on_payment : триггерит
+
+' Клиники → ИИ
+evt_images_added ..> pol_ai_on_images : триггерит
+pol_ai_on_images --> agg_ai_request
+agg_ai_request --> evt_ai_request
+
+' ИИ → Клиники (результат)
+evt_ai_done ..> agg_medcard : обновляет
+
+' Платформа → Аналитика
+evt_etl_done ..> pol_refresh_on_etl : триггерит
+
+' Электроника → Телеметрия/Прогноз
+evt_telemetry ..> evt_failure_predicted : анализ
+evt_failure_predicted ..> pol_notify_failure : триггерит
+
+' Фарма → Закупки
+evt_tmc_received ..> pol_reorder : проверка запасов
+
+' ==================== KAFKA КАК ШИНА СОБЫТИЙ ====================
+rectangle "Apache Kafka\n(Event Bus)" <<external>> as kafka #2F4F4F
+
+evt_appointment_created -[hidden]down- kafka
+evt_payment_received -[hidden]down- kafka
+evt_ai_done -[hidden]down- kafka
+evt_etl_done -[hidden]down- kafka
+evt_telemetry -[hidden]down- kafka
+
+note bottom of kafka
+  Все междоменные события
+  проходят через Kafka.
+  Подписчики не знают
+  об источниках напрямую.
+end note
 
 @enduml
