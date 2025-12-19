@@ -87,8 +87,29 @@ if project && project.persisted? && '$GITHUB_TOKEN'.length > 0
 end
 "
 
-# Получаем пароль root
-ROOT_PASSWORD=$(docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password 2>/dev/null | awk '{print $2}' || echo "unknown")
+# =============================================================================
+# Создаём Personal Access Token для push
+# =============================================================================
+log_info "Создание Personal Access Token для push..."
+
+PUSH_TOKEN=$(docker exec gitlab gitlab-rails runner "
+user = User.find_by(username: 'root')
+# Удаляем старый токен если есть
+user.personal_access_tokens.find_by(name: 'git-push-token')&.revoke!
+# Создаём новый токен с правами write_repository
+token = user.personal_access_tokens.create!(
+  name: 'git-push-token',
+  scopes: ['api', 'read_repository', 'write_repository'],
+  expires_at: 30.days.from_now
+)
+puts token.token
+" 2>/dev/null)
+
+if [ -z "$PUSH_TOKEN" ]; then
+    log_error "Не удалось создать токен для push"
+    exit 1
+fi
+log_info "✓ Токен создан: ${PUSH_TOKEN:0:15}..."
 
 # =============================================================================
 # Автоматический push кода в GitLab
@@ -98,7 +119,10 @@ log_info "Настройка remote и push кода в GitLab..."
 REPO_PATH="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_PATH" || exit 1
 
-# Добавляем или обновляем remote gitlab
+# URL с токеном для аутентификации
+GITLAB_PUSH_URL="http://root:${PUSH_TOKEN}@localhost:8929/root/$PROJECT_NAME.git"
+
+# Добавляем или обновляем remote gitlab (без токена в URL для безопасности)
 if git remote | grep -q "^gitlab$"; then
     git remote set-url gitlab "$GITLAB_URL/root/$PROJECT_NAME.git"
     log_info "✓ Remote 'gitlab' обновлён"
@@ -107,22 +131,25 @@ else
     log_info "✓ Remote 'gitlab' добавлен"
 fi
 
-# Push всех основных веток в GitLab
+# Push всех основных веток в GitLab (используем URL с токеном)
 log_info "Push веток в GitLab..."
 
 # Push main (если существует)
 if git rev-parse --verify main >/dev/null 2>&1; then
-    git push -f gitlab main 2>/dev/null && log_info "✓ Ветка main запушена" || log_warn "Не удалось запушить main"
+    git push -f "$GITLAB_PUSH_URL" main 2>/dev/null && log_info "✓ Ветка main запушена" || log_warn "Не удалось запушить main"
 fi
 
 # Push terraform (обязательно для pipeline)
 if git rev-parse --verify terraform >/dev/null 2>&1; then
-    git push -f gitlab terraform 2>/dev/null && log_info "✓ Ветка terraform запушена" || log_warn "Не удалось запушить terraform"
+    git push -f "$GITLAB_PUSH_URL" terraform 2>/dev/null && log_info "✓ Ветка terraform запушена" || log_warn "Не удалось запушить terraform"
 else
     log_error "Ветка terraform не найдена локально!"
     log_info "Создайте её: git checkout -b terraform"
     exit 1
 fi
+
+# Получаем пароль root (если есть)
+ROOT_PASSWORD=$(docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password 2>/dev/null | awk '{print $2}' || echo "см. GITLAB_ROOT_PASSWORD в .env")
 
 log_info "✓ Инициализация завершена"
 log_info ""
