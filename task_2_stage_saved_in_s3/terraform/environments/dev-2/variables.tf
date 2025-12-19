@@ -19,7 +19,7 @@ variable "proxmox_root_password" {
 variable "lxc_count" {
   description = "Количество LXC-контейнеров для создания"
   type        = number
-  default     = 2
+  default     = 4
 }
 
 variable "lxc_cpus" {
