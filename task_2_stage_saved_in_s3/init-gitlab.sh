@@ -76,14 +76,57 @@ else
   puts 'Project already exists: ' + project.full_path
 end
 
-# Добавляем GITHUB_TOKEN как CI/CD переменную
-if project && project.persisted? && '$GITHUB_TOKEN'.length > 0
-  var = project.variables.find_or_initialize_by(key: 'GITHUB_TOKEN')
-  var.value = '$GITHUB_TOKEN'
+# Добавляем CI/CD переменные
+if project && project.persisted?
+  # GITHUB_TOKEN
+  if '$GITHUB_TOKEN'.length > 0
+    var = project.variables.find_or_initialize_by(key: 'GITHUB_TOKEN')
+    var.value = '$GITHUB_TOKEN'
+    var.protected = false
+    var.masked = true
+    var.save!
+    puts 'GITHUB_TOKEN set'
+  end
+  
+  # PROXMOX_PASSWORD (для verify_proxmox job)
+  var = project.variables.find_or_initialize_by(key: 'PROXMOX_PASSWORD')
+  var.value = 'mega_proxmox_password'
   var.protected = false
   var.masked = true
   var.save!
-  puts 'CI/CD variable GITHUB_TOKEN set'
+  puts 'PROXMOX_PASSWORD set'
+  
+  # YC_ACCESS_KEY_ID
+  var = project.variables.find_or_initialize_by(key: 'YC_ACCESS_KEY_ID')
+  var.value = '$YC_ACCESS_KEY_ID'
+  var.protected = false
+  var.masked = false
+  var.save!
+  puts 'YC_ACCESS_KEY_ID set'
+  
+  # YC_SECRET_ACCESS_KEY
+  var = project.variables.find_or_initialize_by(key: 'YC_SECRET_ACCESS_KEY')
+  var.value = '$YC_SECRET_ACCESS_KEY'
+  var.protected = false
+  var.masked = true
+  var.save!
+  puts 'YC_SECRET_ACCESS_KEY set'
+  
+  # YC_S3_BUCKET
+  var = project.variables.find_or_initialize_by(key: 'YC_S3_BUCKET')
+  var.value = '$YC_S3_BUCKET'
+  var.protected = false
+  var.masked = false
+  var.save!
+  puts 'YC_S3_BUCKET set'
+  
+  # YC_S3_ENDPOINT
+  var = project.variables.find_or_initialize_by(key: 'YC_S3_ENDPOINT')
+  var.value = '$YC_S3_ENDPOINT'
+  var.protected = false
+  var.masked = false
+  var.save!
+  puts 'YC_S3_ENDPOINT set'
 end
 "
 
@@ -146,6 +189,55 @@ else
     log_error "Ветка terraform не найдена локально!"
     log_info "Создайте её: git checkout -b terraform"
     exit 1
+fi
+
+# =============================================================================
+# Регистрация GitLab Runner
+# =============================================================================
+log_info "Регистрация GitLab Runner..."
+
+# Получаем registration token для проекта
+RUNNER_TOKEN=$(docker exec gitlab gitlab-rails runner "
+project = Project.find_by_full_path('root/$PROJECT_NAME')
+if project
+  # Создаём новый runner token для проекта
+  token = project.runners_token
+  puts token
+end
+" 2>/dev/null)
+
+if [ -z "$RUNNER_TOKEN" ]; then
+    log_warn "Не удалось получить runner token, пробуем instance runner..."
+    # Используем instance runner token
+    RUNNER_TOKEN=$(docker exec gitlab gitlab-rails runner "puts Gitlab::CurrentSettings.runners_registration_token" 2>/dev/null)
+fi
+
+if [ -n "$RUNNER_TOKEN" ]; then
+    log_info "Runner token: ${RUNNER_TOKEN:0:10}..."
+    
+    # Проверяем, зарегистрирован ли уже runner
+    REGISTERED=$(docker exec gitlab-runner gitlab-runner list 2>&1 | grep -c "terraform-runner" || echo "0")
+    
+    if [ "$REGISTERED" = "0" ]; then
+        # Регистрируем runner
+        docker exec gitlab-runner gitlab-runner register \
+            --non-interactive \
+            --url "http://localhost:8929" \
+            --registration-token "$RUNNER_TOKEN" \
+            --executor "docker" \
+            --docker-image "alpine:latest" \
+            --docker-network-mode "host" \
+            --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
+            --description "terraform-runner" \
+            --tag-list "terraform,docker" \
+            --run-untagged="true" \
+            --locked="false" \
+            2>&1 && log_info "✓ Runner зарегистрирован" || log_warn "Ошибка регистрации runner"
+    else
+        log_info "✓ Runner уже зарегистрирован"
+    fi
+else
+    log_warn "Не удалось получить runner token"
 fi
 
 # Получаем пароль root (если есть)
