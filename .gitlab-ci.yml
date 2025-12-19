@@ -74,6 +74,14 @@ verify_proxmox:
   script:
     - echo "=== Verify Proxmox State Consistency ==="
     - |
+      # Проверяем наличие PROXMOX_PASSWORD
+      if [ -z "$PROXMOX_PASSWORD" ]; then
+        echo "[ERROR] PROXMOX_PASSWORD is not set"
+        echo "Добавьте переменную PROXMOX_PASSWORD в Settings > CI/CD > Variables"
+        exit 1
+      fi
+      echo "[OK] PROXMOX_PASSWORD is set (length: ${#PROXMOX_PASSWORD})"
+      
       # Получаем IP первой Proxmox ноды
       if [ ! -f "${NODE_IPS_FILE}" ]; then
         echo "[ERROR] File ${NODE_IPS_FILE} not found"
