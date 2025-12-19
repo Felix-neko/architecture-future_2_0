@@ -46,10 +46,72 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# === Функция получения IP по имени VM через virsh + arp ===
+get_vm_ip_by_name() {
+    local vm_name="$1"
+    local ip=""
+    
+    # Проверяем, существует ли VM
+    if ! virsh list --name 2>/dev/null | grep -q "^${vm_name}$"; then
+        return 1
+    fi
+    
+    # Получаем MAC-адрес VM
+    local mac=$(virsh domiflist "$vm_name" 2>/dev/null | tail -n +3 | head -1 | awk '{print $5}')
+    if [ -z "$mac" ]; then
+        return 1
+    fi
+    
+    # Ищем IP по MAC в arp-таблице
+    ip=$(arp -an 2>/dev/null | grep -i "$mac" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
+    if [ -z "$ip" ]; then
+        # Пробуем ip neigh
+        ip=$(ip neigh show 2>/dev/null | grep -i "$mac" | awk '{print $1}' | head -1)
+    fi
+    
+    echo "$ip"
+}
+
 # === Автоопределение IP мастер-ноды ===
 if [ -z "$MASTER_IP" ]; then
     echo "Определение IP мастер-ноды (pve-node-1)..."
-    MASTER_IP=$(virsh domifaddr pve-node-1 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
+    
+    # 1. Сначала пробуем прочитать из файла .node_ips (первая строка - мастер-нода)
+    if [ -f "$BASEDIR/.node_ips" ]; then
+        MASTER_IP=$(head -1 "$BASEDIR/.node_ips")
+        if [ -n "$MASTER_IP" ]; then
+            echo "  IP из .node_ips: $MASTER_IP"
+        fi
+    fi
+    
+    # 2. Если не нашли в файле, пробуем virsh domifaddr
+    if [ -z "$MASTER_IP" ]; then
+        MASTER_IP=$(virsh domifaddr pve-node-1 2>/dev/null | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
+        if [ -n "$MASTER_IP" ]; then
+            echo "  IP через virsh domifaddr: $MASTER_IP"
+        fi
+    fi
+    
+    # 3. Пробуем virsh net-dhcp-leases
+    if [ -z "$MASTER_IP" ]; then
+        MASTER_IP=$(virsh net-dhcp-leases default 2>/dev/null | grep -i pve-node-1 | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
+        if [ -n "$MASTER_IP" ]; then
+            echo "  IP через virsh net-dhcp-leases: $MASTER_IP"
+        fi
+    fi
+    
+    # 4. Fallback: ищем pve-ноды через virsh и получаем IP через arp
+    if [ -z "$MASTER_IP" ]; then
+        echo "  Поиск pve-нод через virsh + arp..."
+        # Проверяем наличие pve-node-1
+        if virsh list --name 2>/dev/null | grep -q "pve-node-1"; then
+            MASTER_IP=$(get_vm_ip_by_name "pve-node-1")
+            if [ -n "$MASTER_IP" ]; then
+                echo "  IP через virsh + arp: $MASTER_IP"
+            fi
+        fi
+    fi
+    
     if [ -z "$MASTER_IP" ]; then
         echo "✗ Не удалось определить IP мастер-ноды pve-node-1"
         echo "  Укажите IP вручную через --master-ip"
