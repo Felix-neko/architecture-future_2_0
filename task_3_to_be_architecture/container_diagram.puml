@@ -1,0 +1,162 @@
+@startuml container_diagram
+' Диаграмма контейнеров для целевой архитектуры "Будущее 2.0"
+' Использует C4 Model New Style с иконками
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+' Подключаем библиотеки иконок из stdlib (master branch)
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master
+!include ICONURL/devicons2/apache.puml
+!include ICONURL/devicons2/redis.puml
+!include ICONURL/devicons2/postgresql.puml
+!include ICONURL/devicons2/gitlab.puml
+!include ICONURL/devicons2/kubernetes.puml
+!include ICONURL/font-awesome-5/database.puml
+!include ICONURL/font-awesome-5/server.puml
+!include ICONURL/font-awesome-5/cogs.puml
+!include ICONURL/font-awesome-5/cloud.puml
+!include ICONURL/font-awesome-5/key.puml
+!include ICONURL/font-awesome-5/shield_alt.puml
+!include ICONURL/font-awesome-5/project_diagram.puml
+
+' Включаем новый стиль C4
+SHOW_PERSON_PORTRAIT()
+LAYOUT_WITH_LEGEND()
+
+title Диаграмма контейнеров: Целевая архитектура платформы данных "Будущее 2.0"
+
+' ==================== ВНЕШНИЕ ПОЛЬЗОВАТЕЛИ ====================
+Person(data_engineer, "Дата-инженер", "Разрабатывает ETL-процессы и управляет данными")
+Person(analyst, "Аналитик", "Анализирует данные, строит отчёты")
+Person(dev_team, "Команда разработки подразделения", "Разрабатывает сервисы, использует платформу")
+Person(platform_admin, "Администратор платформы", "Управляет инфраструктурой и доступом")
+
+' ==================== ВНЕШНИЕ ИСТОЧНИКИ ДАННЫХ ====================
+System_Ext(external_sources, "Внешние источники данных", "IoT-устройства, партнёры, внешние API")
+
+' ==================== MinIO-кластер (отдельный Kubernetes) ====================
+Enterprise_Boundary(minio_cluster, "MinIO-кластер (Kubernetes)") #E8F5E9 {
+    Container(minio, "MinIO", "S3-совместимое хранилище", "Объектное хранилище для сырых данных, PARQUET/ORC-файлов Iceberg-таблиц", $sprite="database")
+}
+
+' ==================== Spark-кластер (отдельный Kubernetes) ====================
+Enterprise_Boundary(spark_cluster, "Spark-кластер (Kubernetes)") #FFF3E0 {
+    Container(spark_executors, "Spark Executors", "Apache Spark", "Распределённые вычисления над данными в Iceberg-таблицах", $sprite="apache")
+    Container(spark_shuffle, "Spark Shuffle Service", "Apache Spark", "Сервис перемешивания данных между экзекуторами", $sprite="cogs")
+    Container(nessie, "Nessie", "Data Catalog for Iceberg", "Git-like каталог для версионирования Iceberg-таблиц", $sprite="project_diagram")
+    Container(ranger, "Apache Ranger", "IAM/ACL", "Управление доступом к Iceberg-таблицам и данным", $sprite="shield_alt")
+    Container(kyverno_spark, "Kyverno", "Policy Engine", "Политики безопасности: отключение зависших Spark-приложений", $sprite="cogs")
+}
+
+' ==================== Kubernetes-кластер общего назначения ====================
+Enterprise_Boundary(k8s_general, "Kubernetes-кластер общего назначения") #E3F2FD {
+    
+    ' --- Платформенные сервисы ---
+    System_Boundary(platform_services, "Платформенные сервисы") {
+        Container(datahub, "DataHub", "Data Catalog", "Каталог данных, управление метаданными, Data Access Workflows", $sprite="database")
+        Container(kafka, "Apache Kafka", "Event Streaming", "Событийная шина для асинхронной интеграции между доменами", $sprite="apache")
+        Container(karapace, "Karapace", "Schema Registry", "Реестр схем для Kafka (Avro/JSON Schema)", $sprite="cogs")
+        Container(redis, "Redis", "In-Memory DB", "Redis Streams для мультитенантной EDA, кэширование", $sprite="redis")
+        Container(keycloak, "Keycloak", "IAM/SSO", "Единая аутентификация и авторизация пользователей", $sprite="key")
+        Container(kerberos, "Kerberos", "KDC", "Аутентификация сервисов (для Spark, Ranger и др.)", $sprite="key")
+    }
+    
+    ' --- Инструменты для разработчиков и аналитиков ---
+    System_Boundary(dev_tools, "Инструменты разработки и аналитики") {
+        System_Boundary(coder_boundary, "Coder Platform") {
+            Container(jupyterhub, "JupyterHub", "Notebooks", "Интерактивные ноутбуки для прототипирования", $sprite="server")
+        }
+        Container(trino, "Trino", "SQL Engine", "Федеративные SQL-запросы к данным в Iceberg/ClickHouse/и др.", $sprite="database")
+        System_Boundary(airflow_boundary, "Apache Airflow") {
+            Container(airflow, "Airflow Scheduler", "Orchestrator", "Оркестрация ETL-процессов по расписанию", $sprite="apache")
+            Container(custom_etl, "Кастомные ETL-процессы", "Airflow DAGs", "ETL-джобы, запускающие Spark в клиентском режиме", $sprite="cogs")
+        }
+    }
+    
+    ' --- GitOps и IaC ---
+    System_Boundary(gitops, "GitOps / IaC") {
+        Container(gitlab, "GitLab", "VCS + CI/CD", "Репозитории, пайплайны, Terraform для инфраструктуры по требованию", $sprite="gitlab")
+        Container(terraform_runner, "Terraform Runner", "IaC", "Выполнение Terraform-планов для создания ВМ и namespace", $sprite="cloud")
+    }
+    
+    ' --- Сервисы бизнес-команд ---
+    System_Boundary(business_services, "Сервисы бизнес-команд") {
+        Container(clickhouse, "ClickHouse", "OLAP DB", "Аналитические витрины для быстрых запросов", $sprite="database")
+        Container(scylladb, "ScyllaDB", "Wide-column DB", "Хранение онлайн-данных с высокой доступностью", $sprite="database")
+        Container(business_apps, "Приложения подразделений", "Микросервисы", "Сервисы клиник, банка, фармы, электроники")
+    }
+}
+
+' ==================== Инфраструктура по требованию ====================
+Enterprise_Boundary(on_demand_infra, "Инфраструктура по требованию") #F3E5F5 {
+    Container(proxmox, "ProxMox/OpenStack", "Гипервизор", "Виртуальные машины по запросу через Terraform", $sprite="cloud")
+    Container(on_demand_k8s, "K8s-кластеры по требованию", "Kubernetes", "Изолированные кластеры для команд подразделений", $sprite="kubernetes")
+}
+
+' ==================== Инвентарь Bare Metal-серверов ====================
+Enterprise_Boundary(bare_metal_inventory, "Инвентарь Bare Metal-серверов") #ECEFF1 {
+    Container(bare_metal, "Bare Metal-серверы", "Физические серверы", "Инвентарь физических серверов для виртуализации", $sprite="server")
+}
+
+' ==================== Внешние системы (Legacy) ====================
+System_Ext(legacy_mssql, "MS SQL Server (Legacy)", "Существующее DWH, постепенно выводится")
+System_Ext(legacy_camel, "Apache Camel (Legacy)", "Существующая интеграционная шина, постепенно заменяется")
+
+' ==================== СВЯЗИ ====================
+
+' Пользователи -> Платформа
+Rel(data_engineer, airflow, "Создаёт DAG-и для ETL")
+Rel(data_engineer, jupyterhub, "Прототипирует обработку данных")
+Rel(analyst, trino, "Выполняет SQL-запросы")
+Rel(analyst, datahub, "Ищет данные, запрашивает доступ")
+Rel(dev_team, gitlab, "Коммитит код и Terraform-спеки")
+Rel(dev_team, jupyterhub, "Разрабатывает в удалённом окружении")
+Rel(dev_team, business_apps, "Разрабатывает и деплоит приложения")
+Rel(platform_admin, keycloak, "Управляет пользователями и ролями")
+Rel(platform_admin, ranger, "Настраивает политики доступа к данным")
+
+' Spark -> MinIO (Iceberg)
+Rel(spark_executors, minio, "Читает/пишет Iceberg-таблицы", "S3 API")
+Rel(spark_shuffle, spark_executors, "Shuffle-данные")
+Rel(ranger, minio, "Проверяет доступ к объектам")
+Rel(nessie, minio, "Управляет версиями Iceberg-таблиц")
+Rel(spark_executors, nessie, "Работает с каталогом Iceberg")
+Rel(spark_executors, scylladb, "Читает/пишет данные", "CQL")
+
+' JupyterHub и кастомные ETL -> Spark
+Rel(jupyterhub, spark_executors, "Запускает экзекуторы (клиентский режим)", "Spark Submit")
+Rel(custom_etl, spark_executors, "Запускает экзекуторы (клиентский режим)", "Spark Submit")
+
+' Платформенные сервисы
+Rel(datahub, kafka, "Подписывается на метаданные")
+Rel(datahub, karapace, "Получает схемы топиков")
+Rel(datahub, nessie, "Получает метаданные Iceberg-таблиц")
+Rel(karapace, kafka, "Хранит схемы топиков")
+Rel(airflow, spark_executors, "Запускает Spark-задачи", "Spark Submit")
+Rel(trino, minio, "Читает Iceberg-таблицы", "S3 API")
+Rel(trino, clickhouse, "Федеративные запросы", "JDBC")
+Rel(business_apps, kafka, "Публикует/подписывается на события", "Kafka API")
+Rel(business_apps, redis, "Публикует/подписывается (Redis Streams)")
+Rel(business_apps, scylladb, "Читает/пишет данные", "CQL")
+
+' Внешние источники -> Kafka
+Rel(external_sources, kafka, "Публикует события", "Kafka Producer API")
+
+' GitOps
+Rel(gitlab, terraform_runner, "Триггерит Terraform")
+Rel(terraform_runner, proxmox, "Создаёт ВМ")
+Rel(terraform_runner, on_demand_k8s, "Создаёт K8s-кластеры")
+
+' ProxMox -> Bare Metal
+Rel(proxmox, bare_metal, "Управляет физическими серверами")
+
+' Аутентификация
+Rel(keycloak, kerberos, "Федерация с Kerberos")
+Rel(spark_executors, kerberos, "Аутентификация")
+Rel(trino, keycloak, "SSO")
+
+' Legacy миграция
+Rel(airflow, legacy_mssql, "ETL: извлечение данных (миграция)", "JDBC")
+Rel(legacy_camel, kafka, "Миграция событий (постепенно)")
+
+@enduml
