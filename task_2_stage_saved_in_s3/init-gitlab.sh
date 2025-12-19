@@ -90,6 +90,40 @@ end
 # Получаем пароль root
 ROOT_PASSWORD=$(docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password 2>/dev/null | awk '{print $2}' || echo "unknown")
 
+# =============================================================================
+# Автоматический push кода в GitLab
+# =============================================================================
+log_info "Настройка remote и push кода в GitLab..."
+
+REPO_PATH="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_PATH" || exit 1
+
+# Добавляем или обновляем remote gitlab
+if git remote | grep -q "^gitlab$"; then
+    git remote set-url gitlab "$GITLAB_URL/root/$PROJECT_NAME.git"
+    log_info "✓ Remote 'gitlab' обновлён"
+else
+    git remote add gitlab "$GITLAB_URL/root/$PROJECT_NAME.git"
+    log_info "✓ Remote 'gitlab' добавлен"
+fi
+
+# Push всех основных веток в GitLab
+log_info "Push веток в GitLab..."
+
+# Push main (если существует)
+if git rev-parse --verify main >/dev/null 2>&1; then
+    git push -f gitlab main 2>/dev/null && log_info "✓ Ветка main запушена" || log_warn "Не удалось запушить main"
+fi
+
+# Push terraform (обязательно для pipeline)
+if git rev-parse --verify terraform >/dev/null 2>&1; then
+    git push -f gitlab terraform 2>/dev/null && log_info "✓ Ветка terraform запушена" || log_warn "Не удалось запушить terraform"
+else
+    log_error "Ветка terraform не найдена локально!"
+    log_info "Создайте её: git checkout -b terraform"
+    exit 1
+fi
+
 log_info "✓ Инициализация завершена"
 log_info ""
 log_info "Данные для входа:"
@@ -97,6 +131,5 @@ log_info "  URL: $GITLAB_URL"
 log_info "  User: root"
 log_info "  Password: $ROOT_PASSWORD"
 log_info ""
-log_info "Теперь выполните:"
-log_info "  ./switch-to-gitlab.sh"
-log_info "  git push gitlab terraform"
+log_info "Теперь можно запустить pipeline:"
+log_info "  ./test_pipeline.sh"
