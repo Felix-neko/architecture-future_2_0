@@ -90,7 +90,7 @@ if project && project.persisted?
   
   # PROXMOX_PASSWORD (для verify_proxmox job)
   var = project.variables.find_or_initialize_by(key: 'PROXMOX_PASSWORD')
-  var.value = 'mega_proxmox_password'
+  var.value = 'mega_root_password'
   var.protected = false
   var.masked = true
   var.save!
