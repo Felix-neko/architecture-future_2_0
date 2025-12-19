@@ -196,49 +196,72 @@ fi
 # =============================================================================
 log_info "Регистрация GitLab Runner..."
 
-# Получаем registration token для проекта
-RUNNER_TOKEN=$(docker exec gitlab gitlab-rails runner "
-project = Project.find_by_full_path('root/$PROJECT_NAME')
-if project
-  # Создаём новый runner token для проекта
-  token = project.runners_token
-  puts token
-end
-" 2>/dev/null)
-
-if [ -z "$RUNNER_TOKEN" ]; then
-    log_warn "Не удалось получить runner token, пробуем instance runner..."
-    # Используем instance runner token
-    RUNNER_TOKEN=$(docker exec gitlab gitlab-rails runner "puts Gitlab::CurrentSettings.runners_registration_token" 2>/dev/null)
+# Проверяем, есть ли уже зарегистрированный runner (проверяем наличие config.toml с секцией [[runners]])
+# Используем отдельную проверку существования файла
+CONFIG_EXISTS=$(docker exec gitlab-runner sh -c "test -f /etc/gitlab-runner/config.toml && echo 'yes' || echo 'no'")
+if [ "$CONFIG_EXISTS" = "yes" ]; then
+    RUNNER_COUNT=$(docker exec gitlab-runner sh -c "grep -c '\[\[runners\]\]' /etc/gitlab-runner/config.toml 2>/dev/null || echo 0")
+else
+    RUNNER_COUNT="0"
 fi
+log_info "Найдено runner'ов в конфиге: $RUNNER_COUNT"
 
-if [ -n "$RUNNER_TOKEN" ]; then
+if [ "$RUNNER_COUNT" = "0" ]; then
+    log_info "Runner не зарегистрирован, регистрируем..."
+    
+    # Получаем instance runner token (более надёжный способ)
+    RUNNER_TOKEN=$(docker exec gitlab gitlab-rails runner "puts Gitlab::CurrentSettings.runners_registration_token" 2>/dev/null)
+    
+    if [ -z "$RUNNER_TOKEN" ]; then
+        log_error "Не удалось получить runner token"
+        exit 1
+    fi
     log_info "Runner token: ${RUNNER_TOKEN:0:10}..."
     
-    # Проверяем, зарегистрирован ли уже runner
-    REGISTERED=$(docker exec gitlab-runner gitlab-runner list 2>&1 | grep -c "terraform-runner" || echo "0")
+    # Регистрируем runner
+    log_info "Выполняем регистрацию runner..."
+    REGISTER_OUTPUT=$(docker exec gitlab-runner gitlab-runner register \
+        --non-interactive \
+        --url "http://localhost:8929" \
+        --registration-token "$RUNNER_TOKEN" \
+        --executor "docker" \
+        --docker-image "alpine:latest" \
+        --docker-network-mode "host" \
+        --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
+        --description "terraform-runner" \
+        --tag-list "terraform,docker" \
+        --run-untagged="true" \
+        --locked="false" 2>&1)
+    REGISTER_EXIT_CODE=$?
     
-    if [ "$REGISTERED" = "0" ]; then
-        # Регистрируем runner
-        docker exec gitlab-runner gitlab-runner register \
-            --non-interactive \
-            --url "http://localhost:8929" \
-            --registration-token "$RUNNER_TOKEN" \
-            --executor "docker" \
-            --docker-image "alpine:latest" \
-            --docker-network-mode "host" \
-            --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
-            --description "terraform-runner" \
-            --tag-list "terraform,docker" \
-            --run-untagged="true" \
-            --locked="false" \
-            2>&1 && log_info "✓ Runner зарегистрирован" || log_warn "Ошибка регистрации runner"
+    if [ $REGISTER_EXIT_CODE -eq 0 ]; then
+        log_info "✓ Runner зарегистрирован"
+        echo "$REGISTER_OUTPUT" | head -5
     else
-        log_info "✓ Runner уже зарегистрирован"
+        log_error "Ошибка регистрации runner (exit code: $REGISTER_EXIT_CODE)"
+        echo "$REGISTER_OUTPUT"
+        exit 1
     fi
+    
+    # Перезапускаем runner для применения конфигурации
+    log_info "Перезапуск gitlab-runner..."
+    docker restart gitlab-runner
+    sleep 5
+    log_info "✓ Runner перезапущен"
 else
-    log_warn "Не удалось получить runner token"
+    log_info "✓ Runner уже зарегистрирован ($RUNNER_COUNT шт.)"
 fi
+
+# Проверяем, что runner действительно работает
+log_info "Проверка статуса runner..."
+RUNNER_LIST=$(docker exec gitlab-runner gitlab-runner list 2>&1)
+echo "$RUNNER_LIST"
+RUNNER_STATUS=$(echo "$RUNNER_LIST" | grep -c "terraform-runner" || echo "0")
+if [ "$RUNNER_STATUS" = "0" ]; then
+    log_error "Runner не появился в списке после регистрации"
+    exit 1
+fi
+log_info "✓ Runner активен"
 
 # Получаем пароль root (если есть)
 ROOT_PASSWORD=$(docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password 2>/dev/null | awk '{print $2}' || echo "см. GITLAB_ROOT_PASSWORD в .env")
