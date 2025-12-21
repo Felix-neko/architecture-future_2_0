@@ -125,16 +125,50 @@ dev1-lxc-100:~#
 ![img_5.png](img_5.png)
 ![img_6.png](img_6.png)
 
-9) А теперь пусть в конфигурации `dev-2` будет не 2, а 3 виртуалки: зайдём в `task_1_terraform_module/terraform/environments/dev-2/variables.tf` и выставим там:
+9) А теперь пусть в конфигурации `dev-2` будет не 2, а 3 виртуалки: зайдём в `task_1_terraform_module/terraform/environments/dev-2/terraform.tfvars` и выставим там:
 ```terraform
-variable "lxc_count" {
-  description = "Количество LXC-контейнеров для создания"
-  type        = number
-  default     = 3
-}
+# Количество LXC-контейнеров
+lxc_count = 3
 ```
 9) Закоммитим изменения и сделаем `push gitlab terraform` 
-![img_10.png](img_10.png)
+
+10) Снова идём в Gitlab на  http://localhost:8929/root/architecture-future_2_0/-/pipelines и отыскиваем там новый запуск нашего мега-пайплайна.
+
+![img_11.png](img_11.png)
+_Смиренно ждём, пока оный запуск завершится..._
+
+![img_12.png](img_12.png)
+_Дождались, можно читать логи..._
+
+На стадии `terraform_apply` в логах должны быть примерно такие строки:
+```
+==========================================
+=== Processing dev-1 ===
+==========================================
+--- Step 1: Download existing state from S3 ---
+2025-12-21 22:05:34       9317 terraform.tfstate
+Found existing state in S3, downloading...
+download: s3://rubber-duck-infra-states/terraform-states/dev-1/terraform.tfstate to ./terraform.tfstate
+State downloaded. Resources in state:
+```
+...
+```
+==========================================
+=== Processing dev-2 ===
+==========================================
+--- Step 1: Download existing state from S3 ---
+2025-12-21 22:05:36      14236 terraform.tfstate
+Found existing state in S3, downloading...
+download: s3://rubber-duck-infra-states/terraform-states/dev-2/terraform.tfstate to ./terraform.tfstate
+State downloaded. Resources in state:
+  - local_file.lxc_ips
+  - null_resource.setup_ssh
+  - proxmox_virtual_environment_container.lxc
+  - proxmox_virtual_environment_download_file.lxc_template
+```
+
+
+
 [//]: # (4&#41; Запускаем скрипт для  пайплайна:)
 
 [//]: # (```bash)
