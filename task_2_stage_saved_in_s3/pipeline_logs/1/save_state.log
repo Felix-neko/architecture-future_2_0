@@ -1,0 +1,67 @@
+[0KRunning with gitlab-runner 18.6.6 (df85dadf)[0;m
+[0K  on terraform-runner WxDbbuFJW, system ID: r_pjiJOk8EGucG[0;m
+section_start:1766354718:prepare_executor
+[0K[0K[36;1mPreparing the "docker" executor[0;m[0;m
+[0KUsing Docker executor with image amazon/aws-cli:latest ...[0;m
+[0KUsing effective pull policy of [always] for container amazon/aws-cli:latest[0;m
+[0KPulling docker image amazon/aws-cli:latest ...[0;m
+[0KUsing docker image sha256:ff2eb7d99b2d2036234ae078ff2fc25450a9b37639adcb051aa67234e008b242 for amazon/aws-cli:latest with digest amazon/aws-cli@sha256:1bb568974672a089dca2de95d69ea30aba194965dc5bee01df2eab19dc008316 ...[0;m
+section_end:1766354730:prepare_executor
+[0Ksection_start:1766354730:prepare_script
+[0K[0K[36;1mPreparing environment[0;m[0;m
+[0KUsing effective pull policy of [always] for container sha256:bb3a6cd525fa7879a78e4677081ab9c7ab7a6daac5327d4fd8054e9e1af8a07a[0;m
+Running on runner-wxdbbufjw-project-1-concurrent-0 via gigant...
+section_end:1766354730:prepare_script
+[0Ksection_start:1766354730:get_sources
+[0K[0K[36;1mGetting source from Git repository[0;m[0;m
+[32;1mGitaly correlation ID: 01KD1F43WABVEBPYHN39CNKSB7[0;m
+[32;1mFetching changes with git depth set to 20...[0;m
+Reinitialized existing Git repository in /builds/root/architecture-future_2_0/.git/
+[32;1mCreated fresh repository.[0;m
+[32;1mChecking out 706f74f4 as detached HEAD (ref is terraform)...[0;m
+Removing task_2_stage_saved_in_s3/terraform/environments/dev-1/terraform.tfstate
+Removing task_2_stage_saved_in_s3/terraform/environments/dev-2/terraform.tfstate
+
+[32;1mSkipping Git submodules setup[0;m
+section_end:1766354731:get_sources
+[0Ksection_start:1766354731:download_artifacts
+[0K[0K[36;1mDownloading artifacts[0;m[0;m
+[32;1mDownloading artifacts for terraform_apply (12)...[0;m
+Downloading artifacts from coordinator... ok      [0;m  correlation_id[0;m=01KD1F4GH9E3G8BN4NN0PSVNNW host[0;m=localhost:8929 id[0;m=12 responseStatus[0;m=200 OK token[0;m=64_Fs5s38
+section_end:1766354731:download_artifacts
+[0Ksection_start:1766354731:step_script
+[0K[0K[36;1mExecuting "step_script" stage of the job script[0;m[0;m
+[0KUsing effective pull policy of [always] for container amazon/aws-cli:latest[0;m
+[0KUsing docker image sha256:ff2eb7d99b2d2036234ae078ff2fc25450a9b37639adcb051aa67234e008b242 for amazon/aws-cli:latest with digest amazon/aws-cli@sha256:1bb568974672a089dca2de95d69ea30aba194965dc5bee01df2eab19dc008316 ...[0;m
+[32;1m$ echo "Save State to S3"[0;m
+Save State to S3
+[32;1m$ if [ -z "$YC_ACCESS_KEY_ID" ] || [ -z "$YC_SECRET_ACCESS_KEY" ]; then # collapsed multi-line command[0;m
+[32;1m$ mkdir -p ~/.aws[0;m
+[32;1m$ echo "[default]" > ~/.aws/credentials[0;m
+[32;1m$ echo "aws_access_key_id = $YC_ACCESS_KEY_ID" >> ~/.aws/credentials[0;m
+[32;1m$ echo "aws_secret_access_key = $YC_SECRET_ACCESS_KEY" >> ~/.aws/credentials[0;m
+[32;1m$ echo "[default]" > ~/.aws/config[0;m
+[32;1m$ echo "region = ru-central1" >> ~/.aws/config[0;m
+[32;1m$ aws s3 ls "s3://${YC_S3_BUCKET}/" --endpoint-url "${YC_S3_ENDPOINT}" || echo "Bucket empty"[0;m
+                           PRE terraform-states/
+[32;1m$ for ENV_DIR in ${TF_ROOT}/environments/*/; do # collapsed multi-line command[0;m
+Processing: dev-1
+Uploading task_2_stage_saved_in_s3/terraform/environments/dev-1/terraform.tfstate
+Completed 9.1 KiB/9.1 KiB (14.5 KiB/s) with 1 file(s) remaining
+upload: task_2_stage_saved_in_s3/terraform/environments/dev-1/terraform.tfstate to s3://rubber-duck-infra-states/terraform-states/dev-1/terraform.tfstate
+Processing: dev-2
+Uploading task_2_stage_saved_in_s3/terraform/environments/dev-2/terraform.tfstate
+Completed 13.9 KiB/13.9 KiB (19.3 KiB/s) with 1 file(s) remaining
+upload: task_2_stage_saved_in_s3/terraform/environments/dev-2/terraform.tfstate to s3://rubber-duck-infra-states/terraform-states/dev-2/terraform.tfstate
+[32;1m$ echo '{"pipeline":"'$CI_PIPELINE_ID'","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > /tmp/meta.json # collapsed multi-line command[0;m
+Completed 52 Bytes/52 Bytes (64 Bytes/s) with 1 file(s) remaining
+upload: ../../../tmp/meta.json to s3://rubber-duck-infra-states/terraform-states/_pipeline_2.json
+[32;1m$ aws s3 ls "s3://${YC_S3_BUCKET}/terraform-states/" --recursive --endpoint-url "${YC_S3_ENDPOINT}" || true[0;m
+2025-12-21 22:05:38         52 terraform-states/_pipeline_2.json
+2025-12-21 22:05:34       9317 terraform-states/dev-1/terraform.tfstate
+2025-12-21 22:05:36      14236 terraform-states/dev-2/terraform.tfstate
+section_end:1766354740:step_script
+[0Ksection_start:1766354740:cleanup_file_variables
+[0K[0K[36;1mCleaning up project directory and file based variables[0;m[0;m
+section_end:1766354740:cleanup_file_variables
+[0K[32;1mJob succeeded[0;m

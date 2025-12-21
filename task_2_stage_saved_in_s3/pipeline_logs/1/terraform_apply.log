@@ -1,0 +1,807 @@
+[0KRunning with gitlab-runner 18.6.6 (df85dadf)[0;m
+[0K  on terraform-runner WxDbbuFJW, system ID: r_pjiJOk8EGucG[0;m
+section_start:1766354550:prepare_executor
+[0K[0K[36;1mPreparing the "docker" executor[0;m[0;m
+[0KUsing Docker executor with image hashicorp/terraform:latest ...[0;m
+[0KUsing effective pull policy of [always] for container hashicorp/terraform:latest[0;m
+[0KPulling docker image hashicorp/terraform:latest ...[0;m
+[0KUsing docker image sha256:cb8f439f777dba22460d5bc01ee142a76acbccb1166ef1074cd4a87d99e5d1aa for hashicorp/terraform:latest with digest hashicorp/terraform@sha256:20056ea0d2706f2a944e202befa8a558dbcc5798da0b64f884b2647aab82a4ef ...[0;m
+section_end:1766354553:prepare_executor
+[0Ksection_start:1766354553:prepare_script
+[0K[0K[36;1mPreparing environment[0;m[0;m
+[0KUsing effective pull policy of [always] for container sha256:bb3a6cd525fa7879a78e4677081ab9c7ab7a6daac5327d4fd8054e9e1af8a07a[0;m
+Running on runner-wxdbbufjw-project-1-concurrent-0 via gigant...
+section_end:1766354553:prepare_script
+[0Ksection_start:1766354553:get_sources
+[0K[0K[36;1mGetting source from Git repository[0;m[0;m
+[32;1mGitaly correlation ID: 01KD1EYZ96NDXZEVBP9A6A4BEH[0;m
+[32;1mFetching changes with git depth set to 20...[0;m
+Reinitialized existing Git repository in /builds/root/architecture-future_2_0/.git/
+[32;1mCreated fresh repository.[0;m
+[32;1mChecking out 706f74f4 as detached HEAD (ref is terraform)...[0;m
+
+[32;1mSkipping Git submodules setup[0;m
+section_end:1766354554:get_sources
+[0Ksection_start:1766354554:step_script
+[0K[0K[36;1mExecuting "step_script" stage of the job script[0;m[0;m
+[0KUsing effective pull policy of [always] for container hashicorp/terraform:latest[0;m
+[0KUsing docker image sha256:cb8f439f777dba22460d5bc01ee142a76acbccb1166ef1074cd4a87d99e5d1aa for hashicorp/terraform:latest with digest hashicorp/terraform@sha256:20056ea0d2706f2a944e202befa8a558dbcc5798da0b64f884b2647aab82a4ef ...[0;m
+[32;1m$ apk add --no-cache bash curl jq openssh-client sshpass aws-cli[0;m
+( 1/66) Installing libbz2 (1.0.8-r6)
+( 2/66) Installing libffi (3.5.2-r0)
+( 3/66) Installing gdbm (1.26-r0)
+( 4/66) Installing xz-libs (5.8.1-r0)
+( 5/66) Installing libgcc (15.2.0-r2)
+( 6/66) Installing libstdc++ (15.2.0-r2)
+( 7/66) Installing mpdecimal (4.0.1-r0)
+( 8/66) Installing libpanelw (6.5_p20251123-r0)
+( 9/66) Installing readline (8.3.1-r0)
+(10/66) Installing sqlite-libs (3.51.1-r0)
+(11/66) Installing python3 (3.12.12-r0)
+(12/66) Installing python3-pycache-pyc0 (3.12.12-r0)
+(13/66) Installing pyc (3.12.12-r0)
+(14/66) Installing aws-cli-pyc (2.32.7-r0)
+(15/66) Installing py3-awscrt-pyc (0.29.1-r0)
+(16/66) Installing python3-pyc (3.12.12-r0)
+(17/66) Installing aws-c-common (0.12.6-r0)
+(18/66) Installing aws-c-cal (0.9.13-r0)
+(19/66) Installing aws-c-compression (0.3.1-r1)
+(20/66) Installing s2n-tls (1.6.1-r0)
+(21/66) Installing aws-c-io (0.23.3-r0)
+(22/66) Installing aws-c-http (0.10.7-r0)
+(23/66) Installing aws-c-sdkutils (0.2.4-r1)
+(24/66) Installing aws-c-auth (0.9.3-r0)
+(25/66) Installing aws-checksums (0.2.7-r1)
+(26/66) Installing aws-c-event-stream (0.5.7-r1)
+(27/66) Installing aws-c-mqtt (0.13.3-r1)
+(28/66) Installing aws-c-s3 (0.11.2-r0)
+(29/66) Installing py3-awscrt (0.29.1-r0)
+(30/66) Installing py3-certifi (2025.11.12-r0)
+(31/66) Installing py3-certifi-pyc (2025.11.12-r0)
+(32/66) Installing py3-colorama (0.4.6-r6)
+(33/66) Installing py3-colorama-pyc (0.4.6-r6)
+(34/66) Installing py3-cparser (2.22-r1)
+(35/66) Installing py3-cparser-pyc (2.22-r1)
+(36/66) Installing py3-cffi (1.17.1-r1)
+(37/66) Installing py3-cffi-pyc (1.17.1-r1)
+(38/66) Installing py3-cryptography (46.0.3-r0)
+(39/66) Installing py3-cryptography-pyc (46.0.3-r0)
+(40/66) Installing py3-six (1.17.0-r0)
+(41/66) Installing py3-six-pyc (1.17.0-r0)
+(42/66) Installing py3-dateutil (2.9.0-r2)
+(43/66) Installing py3-dateutil-pyc (2.9.0-r2)
+(44/66) Installing py3-distro (1.9.0-r2)
+(45/66) Installing py3-distro-pyc (1.9.0-r2)
+(46/66) Installing py3-docutils (0.21.2-r1)
+(47/66) Installing py3-docutils-pyc (0.21.2-r1)
+(48/66) Installing py3-jmespath (1.0.1-r4)
+(49/66) Installing py3-jmespath-pyc (1.0.1-r4)
+(50/66) Installing py3-wcwidth (0.2.13-r1)
+(51/66) Installing py3-wcwidth-pyc (0.2.13-r1)
+(52/66) Installing py3-prompt_toolkit (3.0.51-r0)
+(53/66) Installing py3-prompt_toolkit-pyc (3.0.51-r0)
+(54/66) Installing py3-ruamel.yaml.clib (0.2.8-r2)
+(55/66) Installing py3-ruamel.yaml (0.18.16-r0)
+(56/66) Installing py3-ruamel.yaml-pyc (0.18.16-r0)
+(57/66) Installing py3-urllib3 (2.5.0-r0)
+(58/66) Installing py3-urllib3-pyc (2.5.0-r0)
+(59/66) Installing py3-zipp (3.23.0-r0)
+(60/66) Installing py3-zipp-pyc (3.23.0-r0)
+(61/66) Installing aws-cli (2.32.7-r0)
+(62/66) Installing bash (5.3.3-r1)
+  Executing bash-5.3.3-r1.post-install
+(63/66) Installing curl (8.17.0-r1)
+(64/66) Installing oniguruma (6.9.10-r0)
+(65/66) Installing jq (1.8.1-r0)
+(66/66) Installing sshpass (1.10-r0)
+Executing busybox-1.37.0-r29.trigger
+OK: 208 MiB in 106 packages
+[32;1m$ # Настройка AWS CLI для Yandex S3 # collapsed multi-line command[0;m
+[32;1m$ echo "=== Terraform Apply ==="[0;m
+=== Terraform Apply ===
+[32;1m$ # Читаем IP адреса из .node_ips файла # collapsed multi-line command[0;m
+Proxmox nodes: 192.168.122.232,192.168.122.83,192.168.122.191
+
+==========================================
+=== Processing dev-1 ===
+==========================================
+--- Step 1: Download existing state from S3 ---
+No existing state in S3 for dev-1, starting fresh
+--- Step 2: Terraform init ---
+[0m[1mInitializing the backend...[0m
+[0m[1mInitializing modules...[0m
+- lxc_cluster in ../../../../task_1_terraform_module/terraform/vm_module
+[0m[1mInitializing provider plugins...[0m
+- Finding hashicorp/local versions matching ">= 2.0.0"...
+- Finding hashicorp/external versions matching ">= 2.0.0"...
+- Finding bpg/proxmox versions matching ">= 0.50.0"...
+- Finding hashicorp/null versions matching ">= 3.0.0"...
+- Installing hashicorp/null v3.2.4...
+- Installed hashicorp/null v3.2.4 (signed by HashiCorp)
+- Installing hashicorp/local v2.6.1...
+- Installed hashicorp/local v2.6.1 (signed by HashiCorp)
+- Installing hashicorp/external v2.3.5...
+- Installed hashicorp/external v2.3.5 (signed by HashiCorp)
+- Installing bpg/proxmox v0.89.1...
+- Installed bpg/proxmox v0.89.1 (self-signed, key ID [0m[1mF0582AD6AE97C188[0m[0m)
+Partner and community providers are signed by their developers.
+If you'd like to know more about provider signing, you can read about it here:
+https://developer.hashicorp.com/terraform/cli/plugins/signing
+Terraform has created a lock file [1m.terraform.lock.hcl[0m to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.[0m
+
+[0m[1m[32mTerraform has been successfully initialized![0m[32m[0m
+[0m[32m
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.[0m
+--- Step 3: Terraform plan ---
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.lxc_cluster.local_file.lxc_ips[0][0m will be created
+[0m  [32m+[0m[0m resource "local_file" "lxc_ips" {
+      [32m+[0m[0m content              = "192.168.122.200"
+      [32m+[0m[0m content_base64sha256 = (known after apply)
+      [32m+[0m[0m content_base64sha512 = (known after apply)
+      [32m+[0m[0m content_md5          = (known after apply)
+      [32m+[0m[0m content_sha1         = (known after apply)
+      [32m+[0m[0m content_sha256       = (known after apply)
+      [32m+[0m[0m content_sha512       = (known after apply)
+      [32m+[0m[0m directory_permission = "0777"
+      [32m+[0m[0m file_permission      = "0644"
+      [32m+[0m[0m filename             = "./.lxc_ips"
+      [32m+[0m[0m id                   = (known after apply)
+    }
+
+[1m  # module.lxc_cluster.null_resource.setup_ssh[0][0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "setup_ssh" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "container_id" = "100"
+        }
+    }
+
+[1m  # module.lxc_cluster.proxmox_virtual_environment_container.lxc[0][0m will be created
+[0m  [32m+[0m[0m resource "proxmox_virtual_environment_container" "lxc" {
+      [32m+[0m[0m description    = <<-EOT
+            dev1-lxc-100
+        EOT
+      [32m+[0m[0m id             = (known after apply)
+      [32m+[0m[0m ipv4           = (known after apply)
+      [32m+[0m[0m ipv6           = (known after apply)
+      [32m+[0m[0m node_name      = "pve-node-1"
+      [32m+[0m[0m protection     = false
+      [32m+[0m[0m start_on_boot  = true
+      [32m+[0m[0m started        = true
+      [32m+[0m[0m template       = false
+      [32m+[0m[0m timeout_clone  = 1800
+      [32m+[0m[0m timeout_create = 1800
+      [32m+[0m[0m timeout_delete = 60
+      [32m+[0m[0m timeout_start  = 300
+      [32m+[0m[0m timeout_update = 1800
+      [32m+[0m[0m unprivileged   = true
+      [32m+[0m[0m vm_id          = 100
+
+      [32m+[0m[0m cpu {
+          [32m+[0m[0m architecture = "amd64"
+          [32m+[0m[0m cores        = 2
+          [32m+[0m[0m units        = 1024
+        }
+
+      [32m+[0m[0m disk {
+          [32m+[0m[0m acl          = false
+          [32m+[0m[0m datastore_id = "local-lvm"
+          [32m+[0m[0m quota        = false
+          [32m+[0m[0m replicate    = false
+          [32m+[0m[0m size         = 10
+        }
+
+      [32m+[0m[0m initialization {
+          [32m+[0m[0m hostname = "dev1-lxc-100"
+
+          [32m+[0m[0m ip_config {
+              [32m+[0m[0m ipv4 {
+                  [32m+[0m[0m address = "192.168.122.200/24"
+                  [32m+[0m[0m gateway = "192.168.122.1"
+                }
+            }
+
+          [32m+[0m[0m user_account {
+              [32m+[0m[0m keys = [
+                  [32m+[0m[0m "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAorvN90ywTCfdk8t5izq0JGTiFrfasSFtU2P6kcu1BZ vm-access-key",
+                ]
+            }
+        }
+
+      [32m+[0m[0m memory {
+          [32m+[0m[0m dedicated = 4096
+          [32m+[0m[0m swap      = 0
+        }
+
+      [32m+[0m[0m network_interface {
+          [32m+[0m[0m bridge      = "vmbr0"
+          [32m+[0m[0m enabled     = true
+          [32m+[0m[0m firewall    = false
+          [32m+[0m[0m mac_address = (known after apply)
+          [32m+[0m[0m mtu         = 0
+          [32m+[0m[0m name        = "eth0"
+          [32m+[0m[0m rate_limit  = 0
+          [32m+[0m[0m vlan_id     = 0
+        }
+
+      [32m+[0m[0m operating_system {
+          [32m+[0m[0m template_file_id = "local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz"
+          [32m+[0m[0m type             = "alpine"
+        }
+    }
+
+[1m  # module.lxc_cluster.proxmox_virtual_environment_download_file.lxc_template[0][0m will be created
+[0m  [32m+[0m[0m resource "proxmox_virtual_environment_download_file" "lxc_template" {
+      [32m+[0m[0m content_type        = "vztmpl"
+      [32m+[0m[0m datastore_id        = "local"
+      [32m+[0m[0m file_name           = (known after apply)
+      [32m+[0m[0m id                  = (known after apply)
+      [32m+[0m[0m node_name           = "pve-node-1"
+      [32m+[0m[0m overwrite           = true
+      [32m+[0m[0m overwrite_unmanaged = true
+      [32m+[0m[0m size                = (known after apply)
+      [32m+[0m[0m upload_timeout      = 600
+      [32m+[0m[0m url                 = "http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz"
+      [32m+[0m[0m verify              = true
+    }
+
+[1mPlan:[0m [0m4 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  [32m+[0m[0m lxc_ips          = [
+      [32m+[0m[0m "192.168.122.200/24",
+    ]
+  [32m+[0m[0m lxc_ips_file     = "./.lxc_ips"
+  [32m+[0m[0m lxc_names        = [
+      [32m+[0m[0m <<-EOT
+            dev1-lxc-100
+        EOT,
+    ]
+  [32m+[0m[0m lxc_vmids        = [
+      [32m+[0m[0m 100,
+    ]
+  [32m+[0m[0m node_assignments = [
+      [32m+[0m[0m "pve-node-1",
+    ]
+  [32m+[0m[0m placement_error  = ""
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Saved the plan to: tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan"
+--- Step 4: Terraform apply ---
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_download_file.lxc_template[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_download_file.lxc_template[0]: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_download_file.lxc_template[0]: Creation complete after 13s [id=local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz][0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_container.lxc[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_container.lxc[0]: Creation complete after 5s [id=100][0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Provisioning with 'remote-exec'...[0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mConnecting to remote host via SSH...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Host: 192.168.122.232
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  User: root
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Password: true
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Private key: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Certificate: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  SSH Agent: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Checking Host Key: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Target Platform: unix
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mConnected!
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mfetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mfetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m(1/11) Installing openssh-keygen (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7  0%
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(2/11) Installing ncurses-terminfo-base (6.5_p20250503-r0)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7  6% ██
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7  7% ██                                8[0K7  8% ██                                8[0K(3/11) Installing libncursesw (6.5_p20250503-r0)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7  8% ██
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(4/11) Installing libedit (20250104.3.1-r1)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 12% ████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(5/11) Installing openssh-client-common (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 15% █████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7 23% ████████                          8[0K7 26% ████████                          8[0K7 29% █████████                         8[0K7 34% ███████████                       8[0K7 39% █████████████                     8[0K7 46% ███████████████                   8[0K(6/11) Installing openssh-client-default (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 51% █████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(7/11) Installing openssh-sftp-server (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 62% █████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(8/11) Installing openssh-server-common (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 64% █████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(9/11) Installing openssh-server-common-openrc (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 64% ██████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(10/11) Installing openssh-server (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 64% ██████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7 76% ██████████████████████████        8[0K7 88% ██████████████████████████████    8[0K(11/11) Installing openssh (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 95% ████████████████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7100% ██████████████████████████████████8[0KExecuting busybox-1.37.0-r18.trigger
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mOK: 16 MiB in 43 packages
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mssh-keygen: generating new host keys: RSA ECDSA ED25519
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m [1m[32m*[m service sshd added to runlevel default[K
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m [1m[32m*[m Caching service dependencies[K ...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m[A[33C [1m[34m[[1m[32m ok [1m[34m][m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m [1m[32m*[m Starting sshd[K ...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m[A[33C [1m[34m[[1m[32m ok [1m[34m][m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mchpasswd: password for 'root' changed
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Creation complete after 19s [id=3324573894498078335][0m
+[0m[1mmodule.lxc_cluster.local_file.lxc_ips[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.local_file.lxc_ips[0]: Creation complete after 0s [id=18de0de933bbab283c71453a9bfd0c8f05fa7868][0m
+[0m[1m[32m
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mlxc_ips = [
+  "192.168.122.200/24",
+]
+lxc_ips_file = "./.lxc_ips"
+lxc_names = [
+  <<-EOT
+  dev1-lxc-100
+
+  EOT,
+]
+lxc_vmids = [
+  100,
+]
+node_assignments = tolist([
+  "pve-node-1",
+])
+placement_error = ""
+--- Step 5: Upload new state to S3 ---
+Completed 9.1 KiB/9.1 KiB (8.5 KiB/s) with 1 file(s) remaining
+upload: ./terraform.tfstate to s3://rubber-duck-infra-states/terraform-states/dev-1/terraform.tfstate
+State uploaded to S3
+--- State summary for dev-1 ---
+  - local_file.lxc_ips
+  - null_resource.setup_ssh
+  - proxmox_virtual_environment_container.lxc
+  - proxmox_virtual_environment_download_file.lxc_template
+
+==========================================
+=== Processing dev-2 ===
+==========================================
+--- Step 1: Download existing state from S3 ---
+No existing state in S3 for dev-2, starting fresh
+--- Step 2: Terraform init ---
+[0m[1mInitializing the backend...[0m
+[0m[1mInitializing modules...[0m
+- lxc_cluster in ../../../../task_1_terraform_module/terraform/vm_module
+[0m[1mInitializing provider plugins...[0m
+- Finding bpg/proxmox versions matching ">= 0.50.0"...
+- Finding hashicorp/null versions matching ">= 3.0.0"...
+- Finding hashicorp/local versions matching ">= 2.0.0"...
+- Finding hashicorp/external versions matching ">= 2.0.0"...
+- Installing bpg/proxmox v0.89.1...
+- Installed bpg/proxmox v0.89.1 (self-signed, key ID [0m[1mF0582AD6AE97C188[0m[0m)
+- Installing hashicorp/null v3.2.4...
+- Installed hashicorp/null v3.2.4 (signed by HashiCorp)
+- Installing hashicorp/local v2.6.1...
+- Installed hashicorp/local v2.6.1 (signed by HashiCorp)
+- Installing hashicorp/external v2.3.5...
+- Installed hashicorp/external v2.3.5 (signed by HashiCorp)
+Partner and community providers are signed by their developers.
+If you'd like to know more about provider signing, you can read about it here:
+https://developer.hashicorp.com/terraform/cli/plugins/signing
+Terraform has created a lock file [1m.terraform.lock.hcl[0m to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.[0m
+
+[0m[1m[32mTerraform has been successfully initialized![0m[32m[0m
+[0m[32m
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.[0m
+--- Step 3: Terraform plan ---
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.lxc_cluster.local_file.lxc_ips[0][0m will be created
+[0m  [32m+[0m[0m resource "local_file" "lxc_ips" {
+      [32m+[0m[0m content              = <<-EOT
+            192.168.122.210
+            192.168.122.211
+        EOT
+      [32m+[0m[0m content_base64sha256 = (known after apply)
+      [32m+[0m[0m content_base64sha512 = (known after apply)
+      [32m+[0m[0m content_md5          = (known after apply)
+      [32m+[0m[0m content_sha1         = (known after apply)
+      [32m+[0m[0m content_sha256       = (known after apply)
+      [32m+[0m[0m content_sha512       = (known after apply)
+      [32m+[0m[0m directory_permission = "0777"
+      [32m+[0m[0m file_permission      = "0644"
+      [32m+[0m[0m filename             = "./.lxc_ips"
+      [32m+[0m[0m id                   = (known after apply)
+    }
+
+[1m  # module.lxc_cluster.null_resource.setup_ssh[0][0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "setup_ssh" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "container_id" = "110"
+        }
+    }
+
+[1m  # module.lxc_cluster.null_resource.setup_ssh[1][0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "setup_ssh" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "container_id" = "111"
+        }
+    }
+
+[1m  # module.lxc_cluster.proxmox_virtual_environment_container.lxc[0][0m will be created
+[0m  [32m+[0m[0m resource "proxmox_virtual_environment_container" "lxc" {
+      [32m+[0m[0m description    = <<-EOT
+            dev2-lxc-110
+        EOT
+      [32m+[0m[0m id             = (known after apply)
+      [32m+[0m[0m ipv4           = (known after apply)
+      [32m+[0m[0m ipv6           = (known after apply)
+      [32m+[0m[0m node_name      = "pve-node-1"
+      [32m+[0m[0m protection     = false
+      [32m+[0m[0m start_on_boot  = true
+      [32m+[0m[0m started        = true
+      [32m+[0m[0m template       = false
+      [32m+[0m[0m timeout_clone  = 1800
+      [32m+[0m[0m timeout_create = 1800
+      [32m+[0m[0m timeout_delete = 60
+      [32m+[0m[0m timeout_start  = 300
+      [32m+[0m[0m timeout_update = 1800
+      [32m+[0m[0m unprivileged   = true
+      [32m+[0m[0m vm_id          = 110
+
+      [32m+[0m[0m cpu {
+          [32m+[0m[0m architecture = "amd64"
+          [32m+[0m[0m cores        = 2
+          [32m+[0m[0m units        = 1024
+        }
+
+      [32m+[0m[0m disk {
+          [32m+[0m[0m acl          = false
+          [32m+[0m[0m datastore_id = "local-lvm"
+          [32m+[0m[0m quota        = false
+          [32m+[0m[0m replicate    = false
+          [32m+[0m[0m size         = 10
+        }
+
+      [32m+[0m[0m initialization {
+          [32m+[0m[0m hostname = "dev2-lxc-110"
+
+          [32m+[0m[0m ip_config {
+              [32m+[0m[0m ipv4 {
+                  [32m+[0m[0m address = "192.168.122.210/24"
+                  [32m+[0m[0m gateway = "192.168.122.1"
+                }
+            }
+
+          [32m+[0m[0m user_account {
+              [32m+[0m[0m keys = [
+                  [32m+[0m[0m "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAorvN90ywTCfdk8t5izq0JGTiFrfasSFtU2P6kcu1BZ vm-access-key",
+                ]
+            }
+        }
+
+      [32m+[0m[0m memory {
+          [32m+[0m[0m dedicated = 2048
+          [32m+[0m[0m swap      = 0
+        }
+
+      [32m+[0m[0m network_interface {
+          [32m+[0m[0m bridge      = "vmbr0"
+          [32m+[0m[0m enabled     = true
+          [32m+[0m[0m firewall    = false
+          [32m+[0m[0m mac_address = (known after apply)
+          [32m+[0m[0m mtu         = 0
+          [32m+[0m[0m name        = "eth0"
+          [32m+[0m[0m rate_limit  = 0
+          [32m+[0m[0m vlan_id     = 0
+        }
+
+      [32m+[0m[0m operating_system {
+          [32m+[0m[0m template_file_id = "local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz"
+          [32m+[0m[0m type             = "alpine"
+        }
+    }
+
+[1m  # module.lxc_cluster.proxmox_virtual_environment_container.lxc[1][0m will be created
+[0m  [32m+[0m[0m resource "proxmox_virtual_environment_container" "lxc" {
+      [32m+[0m[0m description    = <<-EOT
+            dev2-lxc-111
+        EOT
+      [32m+[0m[0m id             = (known after apply)
+      [32m+[0m[0m ipv4           = (known after apply)
+      [32m+[0m[0m ipv6           = (known after apply)
+      [32m+[0m[0m node_name      = "pve-node-1"
+      [32m+[0m[0m protection     = false
+      [32m+[0m[0m start_on_boot  = true
+      [32m+[0m[0m started        = true
+      [32m+[0m[0m template       = false
+      [32m+[0m[0m timeout_clone  = 1800
+      [32m+[0m[0m timeout_create = 1800
+      [32m+[0m[0m timeout_delete = 60
+      [32m+[0m[0m timeout_start  = 300
+      [32m+[0m[0m timeout_update = 1800
+      [32m+[0m[0m unprivileged   = true
+      [32m+[0m[0m vm_id          = 111
+
+      [32m+[0m[0m cpu {
+          [32m+[0m[0m architecture = "amd64"
+          [32m+[0m[0m cores        = 2
+          [32m+[0m[0m units        = 1024
+        }
+
+      [32m+[0m[0m disk {
+          [32m+[0m[0m acl          = false
+          [32m+[0m[0m datastore_id = "local-lvm"
+          [32m+[0m[0m quota        = false
+          [32m+[0m[0m replicate    = false
+          [32m+[0m[0m size         = 10
+        }
+
+      [32m+[0m[0m initialization {
+          [32m+[0m[0m hostname = "dev2-lxc-111"
+
+          [32m+[0m[0m ip_config {
+              [32m+[0m[0m ipv4 {
+                  [32m+[0m[0m address = "192.168.122.211/24"
+                  [32m+[0m[0m gateway = "192.168.122.1"
+                }
+            }
+
+          [32m+[0m[0m user_account {
+              [32m+[0m[0m keys = [
+                  [32m+[0m[0m "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAorvN90ywTCfdk8t5izq0JGTiFrfasSFtU2P6kcu1BZ vm-access-key",
+                ]
+            }
+        }
+
+      [32m+[0m[0m memory {
+          [32m+[0m[0m dedicated = 2048
+          [32m+[0m[0m swap      = 0
+        }
+
+      [32m+[0m[0m network_interface {
+          [32m+[0m[0m bridge      = "vmbr0"
+          [32m+[0m[0m enabled     = true
+          [32m+[0m[0m firewall    = false
+          [32m+[0m[0m mac_address = (known after apply)
+          [32m+[0m[0m mtu         = 0
+          [32m+[0m[0m name        = "eth0"
+          [32m+[0m[0m rate_limit  = 0
+          [32m+[0m[0m vlan_id     = 0
+        }
+
+      [32m+[0m[0m operating_system {
+          [32m+[0m[0m template_file_id = "local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz"
+          [32m+[0m[0m type             = "alpine"
+        }
+    }
+
+[1m  # module.lxc_cluster.proxmox_virtual_environment_download_file.lxc_template[0][0m will be created
+[0m  [32m+[0m[0m resource "proxmox_virtual_environment_download_file" "lxc_template" {
+      [32m+[0m[0m content_type        = "vztmpl"
+      [32m+[0m[0m datastore_id        = "local"
+      [32m+[0m[0m file_name           = (known after apply)
+      [32m+[0m[0m id                  = (known after apply)
+      [32m+[0m[0m node_name           = "pve-node-1"
+      [32m+[0m[0m overwrite           = true
+      [32m+[0m[0m overwrite_unmanaged = true
+      [32m+[0m[0m size                = (known after apply)
+      [32m+[0m[0m upload_timeout      = 600
+      [32m+[0m[0m url                 = "http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz"
+      [32m+[0m[0m verify              = true
+    }
+
+[1mPlan:[0m [0m6 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  [32m+[0m[0m lxc_ips          = [
+      [32m+[0m[0m "192.168.122.210/24",
+      [32m+[0m[0m "192.168.122.211/24",
+    ]
+  [32m+[0m[0m lxc_ips_file     = "./.lxc_ips"
+  [32m+[0m[0m lxc_names        = [
+      [32m+[0m[0m <<-EOT
+            dev2-lxc-110
+        EOT,
+      [32m+[0m[0m <<-EOT
+            dev2-lxc-111
+        EOT,
+    ]
+  [32m+[0m[0m lxc_vmids        = [
+      [32m+[0m[0m 110,
+      [32m+[0m[0m 111,
+    ]
+  [32m+[0m[0m node_assignments = [
+      [32m+[0m[0m "pve-node-1",
+      [32m+[0m[0m "pve-node-1",
+    ]
+  [32m+[0m[0m placement_error  = ""
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Saved the plan to: tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan"
+--- Step 4: Terraform apply ---
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_download_file.lxc_template[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_download_file.lxc_template[0]: Creation complete after 2s [id=local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz][0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_container.lxc[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_container.lxc[1]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_container.lxc[0]: Creation complete after 5s [id=110][0m
+[0m[1mmodule.lxc_cluster.proxmox_virtual_environment_container.lxc[1]: Creation complete after 6s [id=111][0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1]: Provisioning with 'remote-exec'...[0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Provisioning with 'remote-exec'...[0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mConnecting to remote host via SSH...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  Host: 192.168.122.232
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  User: root
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  Password: true
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  Private key: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  Certificate: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  SSH Agent: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  Checking Host Key: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m  Target Platform: unix
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mConnecting to remote host via SSH...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Host: 192.168.122.232
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  User: root
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Password: true
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Private key: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Certificate: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  SSH Agent: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Checking Host Key: false
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m  Target Platform: unix
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mConnected!
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mConnected!
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mfetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mfetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mfetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mfetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m(1/11) Installing openssh-keygen (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m(1/11) Installing openssh-keygen (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7  0%
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(2/11) Installing ncurses-terminfo-base (6.5_p20250503-r0)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7  0%
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K(2/11) Installing ncurses-terminfo-base (6.5_p20250503-r0)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7  6% ██
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7  7% ██                                8[0K7  8% ██                                8[0K(3/11) Installing libncursesw (6.5_p20250503-r0)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7  6% ██
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K7  7% ██                                8[0K7  8% ██                                8[0K(3/11) Installing libncursesw (6.5_p20250503-r0)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7  8% ██
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(4/11) Installing libedit (20250104.3.1-r1)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7  8% ██
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K(4/11) Installing libedit (20250104.3.1-r1)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 12% ████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(5/11) Installing openssh-client-common (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 12% ████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K(5/11) Installing openssh-client-common (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 15% █████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 15% █████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7 23% ████████                          8[0K7 26% ████████                          8[0K7 29% █████████                         8[0K7 34% ███████████                       8[0K7 39% █████████████                     8[0K7 46% ███████████████                   8[0K(6/11) Installing openssh-client-default (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K7 23% ████████                          8[0K7 26% ████████                          8[0K7 29% █████████                         8[0K7 34% ███████████                       8[0K7 39% █████████████                     8[0K7 46% ███████████████                   8[0K(6/11) Installing openssh-client-default (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 51% █████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 51% █████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(7/11) Installing openssh-sftp-server (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K(7/11) Installing openssh-sftp-server (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 62% █████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(8/11) Installing openssh-server-common (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 62% █████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K(8/11) Installing openssh-server-common (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 64% █████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(9/11) Installing openssh-server-common-openrc (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1]: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 64% █████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K(9/11) Installing openssh-server-common-openrc (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 64% ██████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K(10/11) Installing openssh-server (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 64% ██████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K(10/11) Installing openssh-server (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 64% ██████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 64% ██████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7 76% ██████████████████████████        8[0K7 88% ██████████████████████████████    8[0K(11/11) Installing openssh (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K7 76% ██████████████████████████        8[0K7 88% ██████████████████████████████    8[0K(11/11) Installing openssh (10.0_p1-r10)
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m7 95% ████████████████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m8[0K7100% ██████████████████████████████████8[0KExecuting busybox-1.37.0-r18.trigger
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mOK: 16 MiB in 43 packages
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m7 95% ████████████████████████████████
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m8[0K7100% ██████████████████████████████████8[0KExecuting busybox-1.37.0-r18.trigger
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mOK: 16 MiB in 43 packages
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mssh-keygen: generating new host keys: RSA
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mECDSA ED25519
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mssh-keygen: generating new host keys: RSA
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mECDSA ED25519
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m [1m[32m*[m service sshd added to runlevel default[K
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m [1m[32m*[m service sshd added to runlevel default[K
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m [1m[32m*[m Caching service dependencies[K ...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m[A[33C [1m[34m[[1m[32m ok [1m[34m][m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m [1m[32m*[m Starting sshd[K ...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0m[A[33C [1m[34m[[1m[32m ok [1m[34m][m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m [1m[32m*[m Caching service dependencies[K ...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m[A[33C [1m[34m[[1m[32m ok [1m[34m][m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m [1m[32m*[m Starting sshd[K ...
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0m[A[33C [1m[34m[[1m[32m ok [1m[34m][m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0] (remote-exec):[0m [0mchpasswd: password for 'root' changed
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[0]: Creation complete after 19s [id=9165434946439659614][0m
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1] (remote-exec):[0m [0mchpasswd: password for 'root' changed
+[0m[1mmodule.lxc_cluster.null_resource.setup_ssh[1]: Creation complete after 19s [id=2994443454630230719][0m
+[0m[1mmodule.lxc_cluster.local_file.lxc_ips[0]: Creating...[0m[0m
+[0m[1mmodule.lxc_cluster.local_file.lxc_ips[0]: Creation complete after 0s [id=af10a4fa127e42f17b5ff393b5f5f104a924c33a][0m
+[0m[1m[32m
+Apply complete! Resources: 6 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mlxc_ips = [
+  "192.168.122.210/24",
+  "192.168.122.211/24",
+]
+lxc_ips_file = "./.lxc_ips"
+lxc_names = [
+  <<-EOT
+  dev2-lxc-110
+
+  EOT,
+  <<-EOT
+  dev2-lxc-111
+
+  EOT,
+]
+lxc_vmids = [
+  110,
+  111,
+]
+node_assignments = tolist([
+  "pve-node-1",
+  "pve-node-1",
+])
+placement_error = ""
+--- Step 5: Upload new state to S3 ---
+Completed 13.9 KiB/13.9 KiB (14.5 KiB/s) with 1 file(s) remaining
+upload: ./terraform.tfstate to s3://rubber-duck-infra-states/terraform-states/dev-2/terraform.tfstate
+State uploaded to S3
+--- State summary for dev-2 ---
+  - local_file.lxc_ips
+  - null_resource.setup_ssh
+  - proxmox_virtual_environment_container.lxc
+  - proxmox_virtual_environment_download_file.lxc_template
+section_end:1766354700:step_script
+[0Ksection_start:1766354700:upload_artifacts_on_success
+[0K[0K[36;1mUploading artifacts for successful job[0;m[0;m
+[32;1mUploading artifacts...[0;m
+task_2_stage_saved_in_s3/terraform/environments/dev-1/terraform.tfstate: found 1 matching artifact files and directories[0;m
+task_2_stage_saved_in_s3/terraform/environments/dev-2/terraform.tfstate: found 1 matching artifact files and directories[0;m
+Uploading artifacts as "archive" to coordinator... 201 Created[0;m  correlation_id[0;m=01KD1F3JC9R9MX3BFVKC94CHPH id[0;m=12 responseStatus[0;m=201 Created token[0;m=64_54BeGP
+section_end:1766354700:upload_artifacts_on_success
+[0Ksection_start:1766354700:cleanup_file_variables
+[0K[0K[36;1mCleaning up project directory and file based variables[0;m[0;m
+section_end:1766354701:cleanup_file_variables
+[0K[32;1mJob succeeded[0;m

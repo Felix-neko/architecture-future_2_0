@@ -1,0 +1,218 @@
+[0KRunning with gitlab-runner 18.6.6 (df85dadf)[0;m
+[0K  on terraform-runner WxDbbuFJW, system ID: r_pjiJOk8EGucG[0;m
+section_start:1766354743:prepare_executor
+[0K[0K[36;1mPreparing the "docker" executor[0;m[0;m
+[0KUsing Docker executor with image alpine:latest ...[0;m
+[0KUsing effective pull policy of [always] for container alpine:latest[0;m
+[0KPulling docker image alpine:latest ...[0;m
+[0KUsing docker image sha256:e7b39c54cdeca0d2aae83114bb605753a5f5bc511fe8be7590e38f6d9f915dad for alpine:latest with digest alpine@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62 ...[0;m
+section_end:1766354746:prepare_executor
+[0Ksection_start:1766354746:prepare_script
+[0K[0K[36;1mPreparing environment[0;m[0;m
+[0KUsing effective pull policy of [always] for container sha256:bb3a6cd525fa7879a78e4677081ab9c7ab7a6daac5327d4fd8054e9e1af8a07a[0;m
+Running on runner-wxdbbufjw-project-1-concurrent-0 via gigant...
+section_end:1766354747:prepare_script
+[0Ksection_start:1766354747:get_sources
+[0K[0K[36;1mGetting source from Git repository[0;m[0;m
+[32;1mGitaly correlation ID: 01KD1F4W4V50WZ7F46QP03EEY2[0;m
+[32;1mFetching changes with git depth set to 20...[0;m
+Reinitialized existing Git repository in /builds/root/architecture-future_2_0/.git/
+[32;1mCreated fresh repository.[0;m
+[32;1mChecking out 706f74f4 as detached HEAD (ref is terraform)...[0;m
+Removing task_2_stage_saved_in_s3/terraform/environments/dev-1/terraform.tfstate
+Removing task_2_stage_saved_in_s3/terraform/environments/dev-2/terraform.tfstate
+
+[32;1mSkipping Git submodules setup[0;m
+section_end:1766354747:get_sources
+[0Ksection_start:1766354747:download_artifacts
+[0K[0K[36;1mDownloading artifacts[0;m[0;m
+[32;1mDownloading artifacts for terraform_apply (12)...[0;m
+Downloading artifacts from coordinator... ok      [0;m  correlation_id[0;m=01KD1F50FZB4K1C11RH3MSGDRW host[0;m=localhost:8929 id[0;m=12 responseStatus[0;m=200 OK token[0;m=64_-ozSno
+section_end:1766354748:download_artifacts
+[0Ksection_start:1766354748:step_script
+[0K[0K[36;1mExecuting "step_script" stage of the job script[0;m[0;m
+[0KUsing effective pull policy of [always] for container alpine:latest[0;m
+[0KUsing docker image sha256:e7b39c54cdeca0d2aae83114bb605753a5f5bc511fe8be7590e38f6d9f915dad for alpine:latest with digest alpine@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62 ...[0;m
+[32;1m$ apk add --no-cache curl jq aws-cli[0;m
+( 1/76) Installing libbz2 (1.0.8-r6)
+( 2/76) Installing libexpat (2.7.3-r0)
+( 3/76) Installing libffi (3.5.2-r0)
+( 4/76) Installing gdbm (1.26-r0)
+( 5/76) Installing xz-libs (5.8.1-r0)
+( 6/76) Installing libgcc (15.2.0-r2)
+( 7/76) Installing libstdc++ (15.2.0-r2)
+( 8/76) Installing mpdecimal (4.0.1-r0)
+( 9/76) Installing ncurses-terminfo-base (6.5_p20251123-r0)
+(10/76) Installing libncursesw (6.5_p20251123-r0)
+(11/76) Installing libpanelw (6.5_p20251123-r0)
+(12/76) Installing readline (8.3.1-r0)
+(13/76) Installing sqlite-libs (3.51.1-r0)
+(14/76) Installing python3 (3.12.12-r0)
+(15/76) Installing python3-pycache-pyc0 (3.12.12-r0)
+(16/76) Installing pyc (3.12.12-r0)
+(17/76) Installing aws-cli-pyc (2.32.7-r0)
+(18/76) Installing py3-awscrt-pyc (0.29.1-r0)
+(19/76) Installing python3-pyc (3.12.12-r0)
+(20/76) Installing aws-c-common (0.12.6-r0)
+(21/76) Installing aws-c-cal (0.9.13-r0)
+(22/76) Installing aws-c-compression (0.3.1-r1)
+(23/76) Installing s2n-tls (1.6.1-r0)
+(24/76) Installing aws-c-io (0.23.3-r0)
+(25/76) Installing aws-c-http (0.10.7-r0)
+(26/76) Installing aws-c-sdkutils (0.2.4-r1)
+(27/76) Installing aws-c-auth (0.9.3-r0)
+(28/76) Installing aws-checksums (0.2.7-r1)
+(29/76) Installing aws-c-event-stream (0.5.7-r1)
+(30/76) Installing aws-c-mqtt (0.13.3-r1)
+(31/76) Installing aws-c-s3 (0.11.2-r0)
+(32/76) Installing py3-awscrt (0.29.1-r0)
+(33/76) Installing py3-certifi (2025.11.12-r0)
+(34/76) Installing py3-certifi-pyc (2025.11.12-r0)
+(35/76) Installing py3-colorama (0.4.6-r6)
+(36/76) Installing py3-colorama-pyc (0.4.6-r6)
+(37/76) Installing py3-cparser (2.22-r1)
+(38/76) Installing py3-cparser-pyc (2.22-r1)
+(39/76) Installing py3-cffi (1.17.1-r1)
+(40/76) Installing py3-cffi-pyc (1.17.1-r1)
+(41/76) Installing py3-cryptography (46.0.3-r0)
+(42/76) Installing py3-cryptography-pyc (46.0.3-r0)
+(43/76) Installing py3-six (1.17.0-r0)
+(44/76) Installing py3-six-pyc (1.17.0-r0)
+(45/76) Installing py3-dateutil (2.9.0-r2)
+(46/76) Installing py3-dateutil-pyc (2.9.0-r2)
+(47/76) Installing py3-distro (1.9.0-r2)
+(48/76) Installing py3-distro-pyc (1.9.0-r2)
+(49/76) Installing py3-docutils (0.21.2-r1)
+(50/76) Installing py3-docutils-pyc (0.21.2-r1)
+(51/76) Installing py3-jmespath (1.0.1-r4)
+(52/76) Installing py3-jmespath-pyc (1.0.1-r4)
+(53/76) Installing py3-wcwidth (0.2.13-r1)
+(54/76) Installing py3-wcwidth-pyc (0.2.13-r1)
+(55/76) Installing py3-prompt_toolkit (3.0.51-r0)
+(56/76) Installing py3-prompt_toolkit-pyc (3.0.51-r0)
+(57/76) Installing py3-ruamel.yaml.clib (0.2.8-r2)
+(58/76) Installing py3-ruamel.yaml (0.18.16-r0)
+(59/76) Installing py3-ruamel.yaml-pyc (0.18.16-r0)
+(60/76) Installing py3-urllib3 (2.5.0-r0)
+(61/76) Installing py3-urllib3-pyc (2.5.0-r0)
+(62/76) Installing py3-zipp (3.23.0-r0)
+(63/76) Installing py3-zipp-pyc (3.23.0-r0)
+(64/76) Installing aws-cli (2.32.7-r0)
+(65/76) Installing brotli-libs (1.2.0-r0)
+(66/76) Installing c-ares (1.34.6-r0)
+(67/76) Installing libunistring (1.4.1-r0)
+(68/76) Installing libidn2 (2.3.8-r0)
+(69/76) Installing nghttp2-libs (1.68.0-r0)
+(70/76) Installing nghttp3 (1.13.1-r0)
+(71/76) Installing libpsl (0.21.5-r3)
+(72/76) Installing zstd-libs (1.5.7-r2)
+(73/76) Installing libcurl (8.17.0-r1)
+(74/76) Installing curl (8.17.0-r1)
+(75/76) Installing oniguruma (6.9.10-r0)
+(76/76) Installing jq (1.8.1-r0)
+Executing busybox-1.37.0-r30.trigger
+OK: 193.3 MiB in 92 packages
+[32;1m$ chmod +x task_2_stage_saved_in_s3/scripts/verify_state.sh[0;m
+[32;1m$ sh task_2_stage_saved_in_s3/scripts/verify_state.sh[0;m
+==============================================
+=== VERIFY INFRASTRUCTURE ===
+==============================================
+
+TF_ROOT: task_2_stage_saved_in_s3/terraform
+NODE_IPS_FILE: task_1_terraform_module/.node_ips
+YC_S3_BUCKET: rubber-duck-infra-states
+
+
+=== STEP 1: Download state files from S3 ===
+
+Current S3 structure:
+2025-12-21 22:05:38         52 terraform-states/_pipeline_2.json
+2025-12-21 22:05:34       9317 terraform-states/dev-1/terraform.tfstate
+2025-12-21 22:05:36      14236 terraform-states/dev-2/terraform.tfstate
+
+Environments in repo: dev-1 dev-2
+
+--- dev-1 ---
+  [OK] Downloaded (version=4, serial=5, resources=4)
+--- dev-2 ---
+  [OK] Downloaded (version=4, serial=7, resources=4)
+
+Summary: 2 downloaded, 0 missing
+
+=== STEP 2: Get Proxmox connection info ===
+
+PROXMOX_HOST from task_1_terraform_module/.node_ips: 192.168.122.232
+PROXMOX_PORT: 8006
+PROXMOX_PASSWORD: (set)
+
+=== STEP 3: Connect to Proxmox API ===
+
+Connecting to: https://192.168.122.232:8006
+Testing connection...
+[OK] Got Proxmox API ticket
+Proxmox nodes: pve-node-2
+pve-node-3
+pve-node-1
+
+=== STEP 4: Get LXC containers from Proxmox ===
+
+--- Node: pve-node-2 ---
+--- Node: pve-node-3 ---
+--- Node: pve-node-1 ---
+  VMID=111 Name=dev2-lxc-111 Status=running
+  VMID=100 Name=dev1-lxc-100 Status=running
+  VMID=110 Name=dev2-lxc-110 Status=running
+
+Total LXC in Proxmox: 3
+
+=== STEP 5: Compare state with Proxmox ===
+
+--- Environment: dev-1 ---
+  VMIDs in state: 100
+  [MATCH] VMID=100 exists in Proxmox (name=dev1-lxc-100, status=running)
+--- Environment: dev-2 ---
+  VMIDs in state: 110 111
+  [MATCH] VMID=110 exists in Proxmox (name=dev2-lxc-110, status=running)
+  [MATCH] VMID=111 exists in Proxmox (name=dev2-lxc-111, status=running)
+
+==============================================
+=== VERIFICATION SUMMARY ===
+==============================================
+
+States downloaded: 2
+States missing:    0
+LXC in Proxmox:    3
+Matches:           3
+Mismatches:        0
+
+
+=== STEP 6: Check state matches terraform specification ===
+
+--- dev-1 ---
+  Expected LXC count (from spec): 1
+  Actual resources in state: 4
+  [OK] State has resources as expected
+--- dev-2 ---
+  Expected LXC count (from spec): 2
+  Actual resources in state: 4
+  [OK] State has resources as expected
+
+==============================================
+=== VERIFICATION SUMMARY ===
+==============================================
+
+States downloaded: 2
+States missing:    0
+LXC in Proxmox:    3
+Matches:           3
+Mismatches:        0
+Spec mismatches:   0
+
+[OK] All resources in state exist in Proxmox
+
+=== Verification complete ===
+section_end:1766354779:step_script
+[0Ksection_start:1766354779:cleanup_file_variables
+[0K[0K[36;1mCleaning up project directory and file based variables[0;m[0;m
+section_end:1766354779:cleanup_file_variables
+[0K[32;1mJob succeeded[0;m
