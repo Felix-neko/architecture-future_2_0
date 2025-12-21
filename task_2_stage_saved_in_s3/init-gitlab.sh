@@ -154,6 +154,12 @@ if [ -z "$PUSH_TOKEN" ]; then
 fi
 log_info "✓ Токен создан: ${PUSH_TOKEN:0:15}..."
 
+# Сохраняем токен в файл для последующего использования
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "$PUSH_TOKEN" > "$SCRIPT_DIR/.gitlab_token"
+chmod 600 "$SCRIPT_DIR/.gitlab_token"
+log_info "✓ Токен сохранён в .gitlab_token"
+
 # =============================================================================
 # Автоматический push кода в GitLab
 # =============================================================================
@@ -165,6 +171,12 @@ cd "$REPO_PATH" || exit 1
 # URL с токеном для аутентификации
 GITLAB_PUSH_URL="http://root:${PUSH_TOKEN}@localhost:8929/root/$PROJECT_NAME.git"
 
+# Настраиваем git credential helper для автоматической аутентификации
+# Сохраняем credentials в git credential store
+git config --local credential.helper store
+echo "http://root:${PUSH_TOKEN}@localhost:8929" > ~/.git-credentials 2>/dev/null || true
+chmod 600 ~/.git-credentials 2>/dev/null || true
+
 # Добавляем или обновляем remote gitlab (без токена в URL для безопасности)
 if git remote | grep -q "^gitlab$"; then
     git remote set-url gitlab "$GITLAB_URL/root/$PROJECT_NAME.git"
@@ -173,6 +185,7 @@ else
     git remote add gitlab "$GITLAB_URL/root/$PROJECT_NAME.git"
     log_info "✓ Remote 'gitlab' добавлен"
 fi
+log_info "✓ Git credentials настроены для автоматической аутентификации"
 
 # Push всех основных веток в GitLab (используем URL с токеном)
 log_info "Push веток в GitLab..."
@@ -268,10 +281,18 @@ ROOT_PASSWORD=$(docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_pas
 
 log_info "✓ Инициализация завершена"
 log_info ""
-log_info "Данные для входа:"
+log_info "Данные для входа в GitLab Web UI:"
 log_info "  URL: $GITLAB_URL"
 log_info "  User: root"
 log_info "  Password: $ROOT_PASSWORD"
+log_info ""
+log_info "Для git push используйте:"
+log_info "  git push gitlab terraform"
+log_info "  (credentials настроены автоматически)"
+log_info ""
+log_info "Или с токеном вручную:"
+log_info "  Username: root"
+log_info "  Password: $(cat "$SCRIPT_DIR/.gitlab_token" 2>/dev/null || echo '<токен в .gitlab_token>')"
 log_info ""
 log_info "Теперь можно запустить pipeline:"
 log_info "  ./test_pipeline.sh"
