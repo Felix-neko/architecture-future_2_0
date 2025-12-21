@@ -134,22 +134,26 @@ lxc_count = 3
 
 10) Снова идём в Gitlab на  http://localhost:8929/root/architecture-future_2_0/-/pipelines и отыскиваем там новый запуск нашего мега-пайплайна.
 
-![img_11.png](img_11.png)
+![img_13.png](img_13.png)
 _Смиренно ждём, пока оный запуск завершится..._
 
 ![img_12.png](img_12.png)
 _Дождались, можно читать логи..._
 
-На стадии `terraform_apply` в логах должны быть примерно такие строки:
+На стадии `terraform_apply` в логах должны быть примерно такие строки (о том, что в S3 найдено имеющееся состояние):
 ```
 ==========================================
 === Processing dev-1 ===
 ==========================================
 --- Step 1: Download existing state from S3 ---
-2025-12-21 22:05:34       9317 terraform.tfstate
+2025-12-21 22:27:33       9388 terraform.tfstate
 Found existing state in S3, downloading...
 download: s3://rubber-duck-infra-states/terraform-states/dev-1/terraform.tfstate to ./terraform.tfstate
 State downloaded. Resources in state:
+  - local_file.lxc_ips
+  - null_resource.setup_ssh
+  - proxmox_virtual_environment_container.lxc
+  - proxmox_virtual_environment_download_file.lxc_template
 ```
 ...
 ```
@@ -157,7 +161,7 @@ State downloaded. Resources in state:
 === Processing dev-2 ===
 ==========================================
 --- Step 1: Download existing state from S3 ---
-2025-12-21 22:05:36      14236 terraform.tfstate
+2025-12-21 22:27:34      14302 terraform.tfstate
 Found existing state in S3, downloading...
 download: s3://rubber-duck-infra-states/terraform-states/dev-2/terraform.tfstate to ./terraform.tfstate
 State downloaded. Resources in state:
@@ -167,12 +171,14 @@ State downloaded. Resources in state:
   - proxmox_virtual_environment_download_file.lxc_template
 ```
 
+11) Заходим в Web UI Proxmox и проверяем, что виртуалок в dev-2 и правда стало 3, а не 2:
+![img_14.png](img_14.png)
 
+12) И проверим, что новое состояние загрузилось в S3:
+![img_15.png](img_15.png)
+![img_16.png](img_16.png)
+_3 виртуалки, вроде норм_
 
-[//]: # (4&#41; Запускаем скрипт для  пайплайна:)
+![img_17.png](img_17.png)
 
-[//]: # (```bash)
-
-[//]: # (bash test_pipeline.sh)
-
-[//]: # (```)
+_Ну вот, вроде всё. Крутым специалистом по GitOps я не стал, но для первого знакомства, надеюсь, потянет : 3_
