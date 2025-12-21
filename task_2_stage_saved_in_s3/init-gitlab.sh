@@ -1,0 +1,298 @@
+#!/bin/bash
+# =============================================================================
+# Скрипт инициализации GitLab после запуска
+# Создаёт пользователя, проект и настраивает переменные CI/CD
+# =============================================================================
+
+set -e
+
+GITLAB_URL="http://localhost:8929"
+GITLAB_USER="developer"
+GITLAB_PASSWORD="Xk9#mN2\$pL7@qR4!"
+GITLAB_EMAIL="developer@local.dev"
+PROJECT_NAME="architecture-future_2_0"
+
+# Цвета для вывода
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Ожидание запуска GitLab
+log_info "Ожидание запуска GitLab..."
+for i in {1..120}; do
+    if curl -s -f "$GITLAB_URL/-/readiness" > /dev/null 2>&1 || \
+       curl -s "$GITLAB_URL" 2>&1 | grep -q "GitLab\|sign_in"; then
+        log_info "✓ GitLab готов к работе (попытка $i)"
+        sleep 5
+        break
+    fi
+    echo "  Попытка $i/120..."
+    sleep 5
+done
+
+# Проверяем, что GitLab запустился
+if ! curl -s "$GITLAB_URL" 2>&1 | grep -q "GitLab\|sign_in\|users"; then
+    log_error "GitLab не запустился"
+    exit 1
+fi
+
+# Читаем GITHUB_TOKEN из .env
+GITHUB_TOKEN=""
+if [ -f "$(dirname "$0")/.env" ]; then
+    source "$(dirname "$0")/.env"
+fi
+
+log_info "Создание проекта под пользователем root..."
+
+# Используем root пользователя - он уже существует
+# Создаём проект через gitlab-rails
+docker exec gitlab gitlab-rails runner "
+# Используем root пользователя
+user = User.find_by(username: 'root')
+puts 'Using user: root'
+
+# Создаём проект если не существует
+project = Project.find_by_full_path('root/$PROJECT_NAME')
+if project.nil?
+  project = Projects::CreateService.new(
+    user,
+    name: '$PROJECT_NAME',
+    path: '$PROJECT_NAME',
+    visibility_level: Gitlab::VisibilityLevel::PRIVATE,
+    initialize_with_readme: false
+  ).execute
+  
+  if project.persisted?
+    puts 'Project created: ' + project.full_path
+  else
+    puts 'Project creation failed: ' + project.errors.full_messages.join(', ')
+  end
+else
+  puts 'Project already exists: ' + project.full_path
+end
+
+# Добавляем CI/CD переменные
+if project && project.persisted?
+  # GITHUB_TOKEN
+  if '$GITHUB_TOKEN'.length > 0
+    var = project.variables.find_or_initialize_by(key: 'GITHUB_TOKEN')
+    var.value = '$GITHUB_TOKEN'
+    var.protected = false
+    var.masked = true
+    var.save!
+    puts 'GITHUB_TOKEN set'
+  end
+  
+  # PROXMOX_PASSWORD (для verify_proxmox job)
+  var = project.variables.find_or_initialize_by(key: 'PROXMOX_PASSWORD')
+  var.value = 'mega_root_password'
+  var.protected = false
+  var.masked = true
+  var.save!
+  puts 'PROXMOX_PASSWORD set'
+  
+  # YC_ACCESS_KEY_ID
+  var = project.variables.find_or_initialize_by(key: 'YC_ACCESS_KEY_ID')
+  var.value = '$YC_ACCESS_KEY_ID'
+  var.protected = false
+  var.masked = false
+  var.save!
+  puts 'YC_ACCESS_KEY_ID set'
+  
+  # YC_SECRET_ACCESS_KEY
+  var = project.variables.find_or_initialize_by(key: 'YC_SECRET_ACCESS_KEY')
+  var.value = '$YC_SECRET_ACCESS_KEY'
+  var.protected = false
+  var.masked = true
+  var.save!
+  puts 'YC_SECRET_ACCESS_KEY set'
+  
+  # YC_S3_BUCKET
+  var = project.variables.find_or_initialize_by(key: 'YC_S3_BUCKET')
+  var.value = '$YC_S3_BUCKET'
+  var.protected = false
+  var.masked = false
+  var.save!
+  puts 'YC_S3_BUCKET set'
+  
+  # YC_S3_ENDPOINT
+  var = project.variables.find_or_initialize_by(key: 'YC_S3_ENDPOINT')
+  var.value = '$YC_S3_ENDPOINT'
+  var.protected = false
+  var.masked = false
+  var.save!
+  puts 'YC_S3_ENDPOINT set'
+end
+"
+
+# =============================================================================
+# Создаём Personal Access Token для push
+# =============================================================================
+log_info "Создание Personal Access Token для push..."
+
+PUSH_TOKEN=$(docker exec gitlab gitlab-rails runner "
+user = User.find_by(username: 'root')
+# Удаляем старый токен если есть
+user.personal_access_tokens.find_by(name: 'git-push-token')&.revoke!
+# Создаём новый токен с правами write_repository
+token = user.personal_access_tokens.create!(
+  name: 'git-push-token',
+  scopes: ['api', 'read_repository', 'write_repository'],
+  expires_at: 30.days.from_now
+)
+puts token.token
+" 2>/dev/null)
+
+if [ -z "$PUSH_TOKEN" ]; then
+    log_error "Не удалось создать токен для push"
+    exit 1
+fi
+log_info "✓ Токен создан: ${PUSH_TOKEN:0:15}..."
+
+# Сохраняем токен в файл для последующего использования
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "$PUSH_TOKEN" > "$SCRIPT_DIR/.gitlab_token"
+chmod 600 "$SCRIPT_DIR/.gitlab_token"
+log_info "✓ Токен сохранён в .gitlab_token"
+
+# =============================================================================
+# Автоматический push кода в GitLab
+# =============================================================================
+log_info "Настройка remote и push кода в GitLab..."
+
+REPO_PATH="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO_PATH" || exit 1
+
+# URL с токеном для аутентификации
+GITLAB_PUSH_URL="http://root:${PUSH_TOKEN}@localhost:8929/root/$PROJECT_NAME.git"
+
+# Настраиваем git credential helper для автоматической аутентификации
+# Сохраняем credentials в git credential store
+git config --local credential.helper store
+echo "http://root:${PUSH_TOKEN}@localhost:8929" > ~/.git-credentials 2>/dev/null || true
+chmod 600 ~/.git-credentials 2>/dev/null || true
+
+# Добавляем или обновляем remote gitlab (без токена в URL для безопасности)
+if git remote | grep -q "^gitlab$"; then
+    git remote set-url gitlab "$GITLAB_URL/root/$PROJECT_NAME.git"
+    log_info "✓ Remote 'gitlab' обновлён"
+else
+    git remote add gitlab "$GITLAB_URL/root/$PROJECT_NAME.git"
+    log_info "✓ Remote 'gitlab' добавлен"
+fi
+log_info "✓ Git credentials настроены для автоматической аутентификации"
+
+# Push всех основных веток в GitLab (используем URL с токеном)
+log_info "Push веток в GitLab..."
+
+# Push main (если существует)
+if git rev-parse --verify main >/dev/null 2>&1; then
+    git push -f "$GITLAB_PUSH_URL" main 2>/dev/null && log_info "✓ Ветка main запушена" || log_warn "Не удалось запушить main"
+fi
+
+# Push terraform (обязательно для pipeline)
+if git rev-parse --verify terraform >/dev/null 2>&1; then
+    git push -f "$GITLAB_PUSH_URL" terraform 2>/dev/null && log_info "✓ Ветка terraform запушена" || log_warn "Не удалось запушить terraform"
+else
+    log_error "Ветка terraform не найдена локально!"
+    log_info "Создайте её: git checkout -b terraform"
+    exit 1
+fi
+
+# =============================================================================
+# Регистрация GitLab Runner
+# =============================================================================
+log_info "Регистрация GitLab Runner..."
+
+# Проверяем, есть ли уже зарегистрированный runner (проверяем наличие config.toml с секцией [[runners]])
+# Используем отдельную проверку существования файла
+CONFIG_EXISTS=$(docker exec gitlab-runner sh -c "test -f /etc/gitlab-runner/config.toml && echo 'yes' || echo 'no'")
+if [ "$CONFIG_EXISTS" = "yes" ]; then
+    RUNNER_COUNT=$(docker exec gitlab-runner sh -c "grep -c '\[\[runners\]\]' /etc/gitlab-runner/config.toml 2>/dev/null || echo 0")
+else
+    RUNNER_COUNT="0"
+fi
+log_info "Найдено runner'ов в конфиге: $RUNNER_COUNT"
+
+if [ "$RUNNER_COUNT" = "0" ]; then
+    log_info "Runner не зарегистрирован, регистрируем..."
+    
+    # Получаем instance runner token (более надёжный способ)
+    RUNNER_TOKEN=$(docker exec gitlab gitlab-rails runner "puts Gitlab::CurrentSettings.runners_registration_token" 2>/dev/null)
+    
+    if [ -z "$RUNNER_TOKEN" ]; then
+        log_error "Не удалось получить runner token"
+        exit 1
+    fi
+    log_info "Runner token: ${RUNNER_TOKEN:0:10}..."
+    
+    # Регистрируем runner
+    log_info "Выполняем регистрацию runner..."
+    REGISTER_OUTPUT=$(docker exec gitlab-runner gitlab-runner register \
+        --non-interactive \
+        --url "http://localhost:8929" \
+        --registration-token "$RUNNER_TOKEN" \
+        --executor "docker" \
+        --docker-image "alpine:latest" \
+        --docker-network-mode "host" \
+        --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
+        --description "terraform-runner" \
+        --tag-list "terraform,docker" \
+        --run-untagged="true" \
+        --locked="false" 2>&1)
+    REGISTER_EXIT_CODE=$?
+    
+    if [ $REGISTER_EXIT_CODE -eq 0 ]; then
+        log_info "✓ Runner зарегистрирован"
+        echo "$REGISTER_OUTPUT" | head -5
+    else
+        log_error "Ошибка регистрации runner (exit code: $REGISTER_EXIT_CODE)"
+        echo "$REGISTER_OUTPUT"
+        exit 1
+    fi
+    
+    # Перезапускаем runner для применения конфигурации
+    log_info "Перезапуск gitlab-runner..."
+    docker restart gitlab-runner
+    sleep 5
+    log_info "✓ Runner перезапущен"
+else
+    log_info "✓ Runner уже зарегистрирован ($RUNNER_COUNT шт.)"
+fi
+
+# Проверяем, что runner действительно работает
+log_info "Проверка статуса runner..."
+RUNNER_LIST=$(docker exec gitlab-runner gitlab-runner list 2>&1)
+echo "$RUNNER_LIST"
+RUNNER_STATUS=$(echo "$RUNNER_LIST" | grep -c "terraform-runner" || echo "0")
+if [ "$RUNNER_STATUS" = "0" ]; then
+    log_error "Runner не появился в списке после регистрации"
+    exit 1
+fi
+log_info "✓ Runner активен"
+
+# Получаем пароль root (если есть)
+ROOT_PASSWORD=$(docker exec gitlab grep 'Password:' /etc/gitlab/initial_root_password 2>/dev/null | awk '{print $2}' || echo "см. GITLAB_ROOT_PASSWORD в .env")
+
+log_info "✓ Инициализация завершена"
+log_info ""
+log_info "Данные для входа в GitLab Web UI:"
+log_info "  URL: $GITLAB_URL"
+log_info "  User: root"
+log_info "  Password: $ROOT_PASSWORD"
+log_info ""
+log_info "Для git push используйте:"
+log_info "  git push gitlab terraform"
+log_info "  (credentials настроены автоматически)"
+log_info ""
+log_info "Или с токеном вручную:"
+log_info "  Username: root"
+log_info "  Password: $(cat "$SCRIPT_DIR/.gitlab_token" 2>/dev/null || echo '<токен в .gitlab_token>')"
+log_info ""
+log_info "Теперь можно запустить pipeline:"
+log_info "  ./test_pipeline.sh"

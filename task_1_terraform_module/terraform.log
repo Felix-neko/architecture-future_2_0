@@ -1,0 +1,402 @@
+➜  vm_module git:(terraform) ✗ terraform init
+Initializing the backend...
+Initializing provider plugins...
+- Finding hashicorp/external versions matching ">= 2.0.0"...
+- Finding bpg/proxmox versions matching ">= 0.50.0"...
+- Finding hashicorp/null versions matching ">= 3.0.0"...
+- Finding hashicorp/local versions matching ">= 2.0.0"...
+- Installing hashicorp/external v2.3.5...
+- Installed hashicorp/external v2.3.5 (signed by HashiCorp)
+- Installing bpg/proxmox v0.89.1...
+- Installed bpg/proxmox v0.89.1 (self-signed, key ID F0582AD6AE97C188)
+- Installing hashicorp/null v3.2.4...
+- Installed hashicorp/null v3.2.4 (signed by HashiCorp)
+- Installing hashicorp/local v2.6.1...
+- Installed hashicorp/local v2.6.1 (signed by HashiCorp)
+Partner and community providers are signed by their developers.
+If you'd like to know more about provider signing, you can read about it here:
+https://developer.hashicorp.com/terraform/cli/plugins/signing
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+➜  vm_module git:(terraform) ✗ terraform plan -var-file="../presets/stage.tfvars" -out=tfplan.stage
+data.external.check_resources[0]: Reading...
+data.external.check_resources[0]: Read complete after 9s [id=-]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # local_file.lxc_ips[0] will be created
+  + resource "local_file" "lxc_ips" {
+      + content              = <<-EOT
+            192.168.122.120
+            192.168.122.121
+        EOT
+      + content_base64sha256 = (known after apply)
+      + content_base64sha512 = (known after apply)
+      + content_md5          = (known after apply)
+      + content_sha1         = (known after apply)
+      + content_sha256       = (known after apply)
+      + content_sha512       = (known after apply)
+      + directory_permission = "0777"
+      + file_permission      = "0644"
+      + filename             = "./.lxc_ips"
+      + id                   = (known after apply)
+    }
+
+  # null_resource.setup_ssh[0] will be created
+  + resource "null_resource" "setup_ssh" {
+      + id       = (known after apply)
+      + triggers = {
+          + "container_id" = "200"
+        }
+    }
+
+  # null_resource.setup_ssh[1] will be created
+  + resource "null_resource" "setup_ssh" {
+      + id       = (known after apply)
+      + triggers = {
+          + "container_id" = "201"
+        }
+    }
+
+  # proxmox_virtual_environment_container.lxc[0] will be created
+  + resource "proxmox_virtual_environment_container" "lxc" {
+      + description    = <<-EOT
+            stage-lxc-200
+        EOT
+      + id             = (known after apply)
+      + ipv4           = (known after apply)
+      + ipv6           = (known after apply)
+      + node_name      = "pve-node-1"
+      + protection     = false
+      + start_on_boot  = true
+      + started        = true
+      + template       = false
+      + timeout_clone  = 1800
+      + timeout_create = 1800
+      + timeout_delete = 60
+      + timeout_start  = 300
+      + timeout_update = 1800
+      + unprivileged   = true
+      + vm_id          = 200
+
+      + cpu {
+          + architecture = "amd64"
+          + cores        = 2
+          + units        = 1024
+        }
+
+      + disk {
+          + acl          = false
+          + datastore_id = "local-lvm"
+          + quota        = false
+          + replicate    = false
+          + size         = 10
+        }
+
+      + initialization {
+          + hostname = "stage-lxc-200"
+
+          + ip_config {
+              + ipv4 {
+                  + address = "192.168.122.120/24"
+                  + gateway = "192.168.122.1"
+                }
+            }
+
+          + user_account {
+              + keys = [
+                  + "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAorvN90ywTCfdk8t5izq0JGTiFrfasSFtU2P6kcu1BZ vm-access-key",
+                ]
+            }
+        }
+
+      + memory {
+          + dedicated = 3072
+          + swap      = 0
+        }
+
+      + network_interface {
+          + bridge      = "vmbr0"
+          + enabled     = true
+          + firewall    = false
+          + mac_address = (known after apply)
+          + mtu         = 0
+          + name        = "eth0"
+          + rate_limit  = 0
+          + vlan_id     = 0
+        }
+
+      + operating_system {
+          + template_file_id = "local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz"
+          + type             = "alpine"
+        }
+    }
+
+  # proxmox_virtual_environment_container.lxc[1] will be created
+  + resource "proxmox_virtual_environment_container" "lxc" {
+      + description    = <<-EOT
+            stage-lxc-201
+        EOT
+      + id             = (known after apply)
+      + ipv4           = (known after apply)
+      + ipv6           = (known after apply)
+      + node_name      = "pve-node-1"
+      + protection     = false
+      + start_on_boot  = true
+      + started        = true
+      + template       = false
+      + timeout_clone  = 1800
+      + timeout_create = 1800
+      + timeout_delete = 60
+      + timeout_start  = 300
+      + timeout_update = 1800
+      + unprivileged   = true
+      + vm_id          = 201
+
+      + cpu {
+          + architecture = "amd64"
+          + cores        = 2
+          + units        = 1024
+        }
+
+      + disk {
+          + acl          = false
+          + datastore_id = "local-lvm"
+          + quota        = false
+          + replicate    = false
+          + size         = 10
+        }
+
+      + initialization {
+          + hostname = "stage-lxc-201"
+
+          + ip_config {
+              + ipv4 {
+                  + address = "192.168.122.121/24"
+                  + gateway = "192.168.122.1"
+                }
+            }
+
+          + user_account {
+              + keys = [
+                  + "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAorvN90ywTCfdk8t5izq0JGTiFrfasSFtU2P6kcu1BZ vm-access-key",
+                ]
+            }
+        }
+
+      + memory {
+          + dedicated = 3072
+          + swap      = 0
+        }
+
+      + network_interface {
+          + bridge      = "vmbr0"
+          + enabled     = true
+          + firewall    = false
+          + mac_address = (known after apply)
+          + mtu         = 0
+          + name        = "eth0"
+          + rate_limit  = 0
+          + vlan_id     = 0
+        }
+
+      + operating_system {
+          + template_file_id = "local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz"
+          + type             = "alpine"
+        }
+    }
+
+  # proxmox_virtual_environment_download_file.lxc_template[0] will be created
+  + resource "proxmox_virtual_environment_download_file" "lxc_template" {
+      + content_type        = "vztmpl"
+      + datastore_id        = "local"
+      + file_name           = (known after apply)
+      + id                  = (known after apply)
+      + node_name           = "pve-node-1"
+      + overwrite           = true
+      + overwrite_unmanaged = true
+      + size                = (known after apply)
+      + upload_timeout      = 600
+      + url                 = "http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz"
+      + verify              = true
+    }
+
+Plan: 6 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + lxc_ips              = [
+      + "192.168.122.120/24",
+      + "192.168.122.121/24",
+    ]
+  + lxc_ips_file         = "./.lxc_ips"
+  + lxc_names            = [
+      + <<-EOT
+            stage-lxc-200
+        EOT,
+      + <<-EOT
+            stage-lxc-201
+        EOT,
+    ]
+  + lxc_vmids            = [
+      + 200,
+      + 201,
+    ]
+  + node_assignments     = [
+      + "pve-node-1",
+      + "pve-node-1",
+    ]
+  + placement_error      = ""
+  + proxmox_api_endpoint = "https://192.168.122.232:8006"
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Saved the plan to: tfplan.stage
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan.stage"
+➜  vm_module git:(terraform) ✗ terraform apply tfplan.stage
+proxmox_virtual_environment_download_file.lxc_template[0]: Creating...
+proxmox_virtual_environment_download_file.lxc_template[0]: Creation complete after 2s [id=local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz]
+proxmox_virtual_environment_container.lxc[0]: Creating...
+proxmox_virtual_environment_container.lxc[1]: Creating...
+proxmox_virtual_environment_container.lxc[0]: Creation complete after 5s [id=200]
+proxmox_virtual_environment_container.lxc[1]: Creation complete after 5s [id=201]
+null_resource.setup_ssh[0]: Creating...
+null_resource.setup_ssh[1]: Creating...
+null_resource.setup_ssh[1]: Provisioning with 'remote-exec'...
+null_resource.setup_ssh[0]: Provisioning with 'remote-exec'...
+null_resource.setup_ssh[1] (remote-exec): Connecting to remote host via SSH...
+null_resource.setup_ssh[1] (remote-exec):   Host: 192.168.122.232
+null_resource.setup_ssh[1] (remote-exec):   User: root
+null_resource.setup_ssh[1] (remote-exec):   Password: true
+null_resource.setup_ssh[1] (remote-exec):   Private key: false
+null_resource.setup_ssh[1] (remote-exec):   Certificate: false
+null_resource.setup_ssh[1] (remote-exec):   SSH Agent: true
+null_resource.setup_ssh[1] (remote-exec):   Checking Host Key: false
+null_resource.setup_ssh[1] (remote-exec):   Target Platform: unix
+null_resource.setup_ssh[0] (remote-exec): Connecting to remote host via SSH...
+null_resource.setup_ssh[0] (remote-exec):   Host: 192.168.122.232
+null_resource.setup_ssh[0] (remote-exec):   User: root
+null_resource.setup_ssh[0] (remote-exec):   Password: true
+null_resource.setup_ssh[0] (remote-exec):   Private key: false
+null_resource.setup_ssh[0] (remote-exec):   Certificate: false
+null_resource.setup_ssh[0] (remote-exec):   SSH Agent: true
+null_resource.setup_ssh[0] (remote-exec):   Checking Host Key: false
+null_resource.setup_ssh[0] (remote-exec):   Target Platform: unix
+null_resource.setup_ssh[1] (remote-exec): Connected!
+null_resource.setup_ssh[0] (remote-exec): Connected!
+null_resource.setup_ssh[0] (remote-exec): fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+null_resource.setup_ssh[1] (remote-exec): fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+null_resource.setup_ssh[0] (remote-exec): fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+null_resource.setup_ssh[1] (remote-exec): fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+null_resource.setup_ssh[0] (remote-exec): (1/11) Installing openssh-keygen (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec): (1/11) Installing openssh-keygen (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec):   0%
+null_resource.setup_ssh[1] (remote-exec):   0%
+null_resource.setup_ssh[0] (remote-exec): (2/11) Installing ncurses-terminfo-base (6.5_p20250503-r0)
+null_resource.setup_ssh[1] (remote-exec): (2/11) Installing ncurses-terminfo-base (6.5_p20250503-r0)
+null_resource.setup_ssh[0] (remote-exec):   6% ██
+null_resource.setup_ssh[0] (remote-exec): (3/11) Installing libncursesw (6.5_p20250503-r0)
+null_resource.setup_ssh[1] (remote-exec):   6% ██
+null_resource.setup_ssh[1] (remote-exec): (3/11) Installing libncursesw (6.5_p20250503-r0)
+null_resource.setup_ssh[0] (remote-exec):   8% ██
+null_resource.setup_ssh[0] (remote-exec): (4/11) Installing libedit (20250104.3.1-r1)
+null_resource.setup_ssh[1] (remote-exec):   8% ██
+null_resource.setup_ssh[1] (remote-exec): (4/11) Installing libedit (20250104.3.1-r1)
+null_resource.setup_ssh[0] (remote-exec):  12% ████
+null_resource.setup_ssh[0] (remote-exec): (5/11) Installing openssh-client-common (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec):  12% ████
+null_resource.setup_ssh[1] (remote-exec): (5/11) Installing openssh-client-common (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec):  15% █████
+null_resource.setup_ssh[1] (remote-exec):  15% █████
+null_resource.setup_ssh[0] (remote-exec): (6/11) Installing openssh-client-default (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec): (6/11) Installing openssh-client-default (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec):  51% █████████████████
+null_resource.setup_ssh[0] (remote-exec): (7/11) Installing openssh-sftp-server (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec):  51% █████████████████
+null_resource.setup_ssh[1] (remote-exec): (7/11) Installing openssh-sftp-server (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec):  62% █████████████████████
+null_resource.setup_ssh[0] (remote-exec): (8/11) Installing openssh-server-common (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec):  62% █████████████████████
+null_resource.setup_ssh[1] (remote-exec): (8/11) Installing openssh-server-common (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec):  64% █████████████████████
+null_resource.setup_ssh[0] (remote-exec): (9/11) Installing openssh-server-common-openrc (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec):  64% █████████████████████
+null_resource.setup_ssh[1] (remote-exec): (9/11) Installing openssh-server-common-openrc (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec):  64% ██████████████████████
+null_resource.setup_ssh[0] (remote-exec): (10/11) Installing openssh-server (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec):  64% ██████████████████████
+null_resource.setup_ssh[1] (remote-exec): (10/11) Installing openssh-server (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec):  64% ██████████████████████
+null_resource.setup_ssh[0] (remote-exec): (11/11) Installing openssh (10.0_p1-r10)
+null_resource.setup_ssh[1] (remote-exec):  64% ██████████████████████
+null_resource.setup_ssh[0] (remote-exec):  95% ████████████████████████████████
+null_resource.setup_ssh[1] (remote-exec): (11/11) Installing openssh (10.0_p1-r10)
+null_resource.setup_ssh[0] (remote-exec): Executing busybox-1.37.0-r18.trigger
+null_resource.setup_ssh[0] (remote-exec): OK: 16 MiB in 43 packages
+null_resource.setup_ssh[1]: Still creating... [00m10s elapsed]
+null_resource.setup_ssh[0]: Still creating... [00m10s elapsed]
+null_resource.setup_ssh[1] (remote-exec):  95% ████████████████████████████████
+null_resource.setup_ssh[1] (remote-exec): Executing busybox-1.37.0-r18.trigger
+null_resource.setup_ssh[1] (remote-exec): OK: 16 MiB in 43 packages
+null_resource.setup_ssh[0] (remote-exec): ssh-keygen: generating new host keys: RSA
+null_resource.setup_ssh[0] (remote-exec): ECDSA ED25519
+null_resource.setup_ssh[1] (remote-exec): ssh-keygen: generating new host keys: RSA
+null_resource.setup_ssh[1] (remote-exec): ECDSA ED25519
+null_resource.setup_ssh[0] (remote-exec):  * service sshd added to runlevel default
+null_resource.setup_ssh[1] (remote-exec):  * service sshd added to runlevel default
+null_resource.setup_ssh[0] (remote-exec):  * Caching service dependencies . [ ok ]
+null_resource.setup_ssh[0] (remote-exec):  * Starting sshd ...              [ ok ]
+null_resource.setup_ssh[1] (remote-exec):  * Caching service dependencies . [ ok ]
+null_resource.setup_ssh[1] (remote-exec):  * Starting sshd ...              [ ok ]
+null_resource.setup_ssh[0] (remote-exec): chpasswd: password for 'root' changed
+null_resource.setup_ssh[0]: Creation complete after 19s [id=7811707473291311185]
+null_resource.setup_ssh[1] (remote-exec): chpasswd: password for 'root' changed
+null_resource.setup_ssh[1]: Creation complete after 19s [id=2834745422522236558]
+local_file.lxc_ips[0]: Creating...
+local_file.lxc_ips[0]: Creation complete after 0s [id=9bd1d7534ed97557b1a732167da204beb9eac34a]
+
+Apply complete! Resources: 6 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+lxc_ips = [
+  "192.168.122.120/24",
+  "192.168.122.121/24",
+]
+lxc_ips_file = "./.lxc_ips"
+lxc_names = [
+  <<-EOT
+  stage-lxc-200
+
+  EOT,
+  <<-EOT
+  stage-lxc-201
+
+  EOT,
+]
+lxc_vmids = [
+  200,
+  201,
+]
+node_assignments = tolist([
+  "pve-node-1",
+  "pve-node-1",
+])
+placement_error = ""
+proxmox_api_endpoint = "https://192.168.122.232:8006"

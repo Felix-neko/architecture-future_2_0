@@ -1,0 +1,432 @@
+# =============================================================================
+# GitLab CI/CD Pipeline для Terraform Infrastructure
+# Имя pipeline отображается через переменную PIPELINE_NAME
+# =============================================================================
+
+stages:
+  - smoke_test          # Быстрая проверка работоспособности
+  - terraform_lint      # Валидация terraform-конфигураций
+  - verify_proxmox      # Проверка соответствия TF state и Proxmox (до apply)
+  - terraform_apply     # Применение terraform-изменений
+  - sync_to_github      # Синхронизация с GitHub
+  - save_state          # Сохранение state в S3
+  - verify_infra        # Финальная проверка инфраструктуры
+  - show_lxc_info       # Вывод IP-адресов LXC и инструкций SSH-подключения
+
+variables:
+  GITHUB_BRANCH: main
+  GITHUB_REPO: github.com/Felix-neko/architecture-future_2_0.git
+  TF_ROOT: task_2_stage_saved_in_s3/terraform
+  NODE_IPS_FILE: task_1_terraform_module/.node_ips
+  AWS_ACCESS_KEY_ID: ${YC_ACCESS_KEY_ID}
+  AWS_SECRET_ACCESS_KEY: ${YC_SECRET_ACCESS_KEY}
+  AWS_DEFAULT_REGION: ru-central1
+  PROXMOX_USER: root@pam
+  PROXMOX_PORT: "8006"
+  # Отключаем SSH-проверку ресурсов (Docker runner не имеет SSH-доступа к Proxmox)
+  # Проверка выполняется через Proxmox API в stage verify_proxmox
+  TF_VAR_enable_resource_check: "false"
+
+smoke_test:
+  stage: smoke_test
+  image: alpine:latest
+  script:
+    - echo "=========================================="
+    - 'echo "Pipeline: ${PIPELINE_NAME:-Terraform CI/CD}"'
+    - 'echo "Triggered by: ${TRIGGERED_BY:-manual}"'
+    - 'echo "Pipeline ID: $CI_PIPELINE_ID"'
+    - 'echo "Branch: $CI_COMMIT_REF_NAME"'
+    - 'echo "Commit: $CI_COMMIT_SHORT_SHA"'
+    - echo "=========================================="
+
+terraform_lint:
+  stage: terraform_lint
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  script:
+    - echo "Terraform Lint"
+    # Проверяем vm_module из task_1
+    - cd task_1_terraform_module/terraform/vm_module
+    - terraform version
+    - terraform init -backend=false
+    - terraform validate
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"
+
+# =============================================================================
+# Проверка соответствия TF state в S3 и реальной конфигурации Proxmox
+# Выполняется ДО terraform apply, чтобы обнаружить drift
+# =============================================================================
+verify_proxmox:
+  stage: verify_proxmox
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq aws-cli
+    - |
+      # Настройка AWS CLI для Yandex S3
+      mkdir -p ~/.aws
+      echo "[default]" > ~/.aws/credentials
+      echo "aws_access_key_id = $YC_ACCESS_KEY_ID" >> ~/.aws/credentials
+      echo "aws_secret_access_key = $YC_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+      echo "[default]" > ~/.aws/config
+      echo "region = ru-central1" >> ~/.aws/config
+  script:
+    - echo "=== Verify Proxmox State Consistency ==="
+    - |
+      # Проверяем наличие PROXMOX_PASSWORD
+      if [ -z "$PROXMOX_PASSWORD" ]; then
+        echo "[ERROR] PROXMOX_PASSWORD is not set"
+        echo "Добавьте переменную PROXMOX_PASSWORD в Settings > CI/CD > Variables"
+        exit 1
+      fi
+      echo "[OK] PROXMOX_PASSWORD is set (length: ${#PROXMOX_PASSWORD})"
+      
+      # Получаем IP первой Proxmox ноды
+      if [ ! -f "${NODE_IPS_FILE}" ]; then
+        echo "[ERROR] File ${NODE_IPS_FILE} not found"
+        exit 1
+      fi
+      PROXMOX_HOST=$(head -1 "${NODE_IPS_FILE}")
+      PROXMOX_URL="https://${PROXMOX_HOST}:${PROXMOX_PORT}"
+      echo "Proxmox URL: $PROXMOX_URL"
+
+      # Проверяем доступность Proxmox API
+      echo "--- Testing Proxmox API connection ---"
+      if ! curl -s -k --connect-timeout 10 "${PROXMOX_URL}/api2/json/version" > /dev/null 2>&1; then
+        echo "[ERROR] Proxmox API not reachable at ${PROXMOX_URL}"
+        echo "Проверьте сетевую доступность Proxmox из GitLab Runner"
+        exit 1
+      fi
+      echo "[OK] Proxmox API reachable"
+
+      # Получаем API ticket
+      TICKET_RESPONSE=$(curl -s -k -d "username=root@pam&password=${PROXMOX_PASSWORD}" \
+        "${PROXMOX_URL}/api2/json/access/ticket" 2>&1)
+      TICKET=$(echo "$TICKET_RESPONSE" | jq -r '.data.ticket // empty')
+      
+      if [ -z "$TICKET" ]; then
+        echo "[ERROR] Failed to get Proxmox API ticket"
+        echo "Response: $TICKET_RESPONSE"
+        exit 1
+      fi
+      echo "[OK] Got Proxmox API ticket"
+
+      # Получаем список LXC из всех нод Proxmox
+      echo ""
+      echo "--- Fetching LXC containers from Proxmox ---"
+      NODES=$(curl -s -k -b "PVEAuthCookie=$TICKET" "${PROXMOX_URL}/api2/json/nodes" | jq -r '.data[].node')
+      
+      > /tmp/proxmox_lxc.txt
+      for NODE in $NODES; do
+        echo "Node: $NODE"
+        LXC_LIST=$(curl -s -k -b "PVEAuthCookie=$TICKET" "${PROXMOX_URL}/api2/json/nodes/${NODE}/lxc")
+        echo "$LXC_LIST" | jq -r '.data[] | "  VMID=\(.vmid) Name=\(.name) Status=\(.status)"'
+        echo "$LXC_LIST" | jq -r '.data[] | "\(.vmid)|\(.name)|\(.status)"' >> /tmp/proxmox_lxc.txt
+      done
+      
+      PROXMOX_LXC_COUNT=$(wc -l < /tmp/proxmox_lxc.txt | tr -d ' ')
+      echo ""
+      echo "Total LXC in Proxmox: $PROXMOX_LXC_COUNT"
+
+      # Скачиваем state файлы из S3 и сравниваем
+      echo ""
+      echo "--- Comparing S3 state with Proxmox ---"
+      MISMATCH_COUNT=0
+      
+      for ENV_DIR in ${TF_ROOT}/environments/dev-*/; do
+        if [ -d "$ENV_DIR" ]; then
+          ENV_NAME=$(basename "$ENV_DIR")
+          S3_STATE="s3://${YC_S3_BUCKET}/terraform-states/${ENV_NAME}/terraform.tfstate"
+          LOCAL_STATE="/tmp/${ENV_NAME}.tfstate"
+          
+          echo ""
+          echo "--- Environment: $ENV_NAME ---"
+          
+          if aws s3 ls "$S3_STATE" --endpoint-url "${YC_S3_ENDPOINT}" > /dev/null 2>&1; then
+            aws s3 cp "$S3_STATE" "$LOCAL_STATE" --endpoint-url "${YC_S3_ENDPOINT}" --quiet
+            
+            # Извлекаем VMID из state
+            VMIDS=$(jq -r '
+              .resources[]? | 
+              select(.type == "proxmox_lxc" or .type == "proxmox_virtual_environment_container") | 
+              .instances[]?.attributes.vmid // .instances[]?.attributes.vm_id
+            ' "$LOCAL_STATE" 2>/dev/null | sort -u)
+            
+            # Также проверяем outputs
+            OUTPUT_VMIDS=$(jq -r '.outputs.lxc_vmids.value[]?' "$LOCAL_STATE" 2>/dev/null | sort -u)
+            [ -n "$OUTPUT_VMIDS" ] && VMIDS="$OUTPUT_VMIDS"
+            
+            if [ -z "$VMIDS" ]; then
+              echo "  No LXC VMIDs in state (empty or new environment)"
+            else
+              echo "  VMIDs in state: $(echo $VMIDS | tr '\n' ' ')"
+              for VMID in $VMIDS; do
+                if grep -q "^${VMID}|" /tmp/proxmox_lxc.txt; then
+                  LXC_INFO=$(grep "^${VMID}|" /tmp/proxmox_lxc.txt)
+                  echo "  [MATCH] VMID=$VMID exists in Proxmox"
+                else
+                  echo "  [MISMATCH] VMID=$VMID in state but NOT in Proxmox!"
+                  MISMATCH_COUNT=$((MISMATCH_COUNT + 1))
+                fi
+              done
+            fi
+          else
+            echo "  No state in S3 (new environment)"
+          fi
+        fi
+      done
+
+      echo ""
+      echo "=== Verification Result ==="
+      if [ "$MISMATCH_COUNT" -gt 0 ]; then
+        echo "[WARNING] Found $MISMATCH_COUNT mismatches between TF state and Proxmox!"
+        echo "State contains VMs that don't exist in Proxmox."
+        echo "Terraform apply will recreate missing resources."
+        # Не блокируем pipeline - terraform apply исправит drift
+      else
+        echo "[OK] TF state is consistent with Proxmox infrastructure"
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"
+
+terraform_apply:
+  stage: terraform_apply
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  before_script:
+    - apk add --no-cache bash curl jq openssh-client sshpass aws-cli
+    - |
+      # Настройка AWS CLI для Yandex S3
+      mkdir -p ~/.aws
+      echo "[default]" > ~/.aws/credentials
+      echo "aws_access_key_id = $YC_ACCESS_KEY_ID" >> ~/.aws/credentials
+      echo "aws_secret_access_key = $YC_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+      echo "[default]" > ~/.aws/config
+      echo "region = ru-central1" >> ~/.aws/config
+  script:
+    - echo "=== Terraform Apply ==="
+    - |
+      # Читаем IP адреса из .node_ips файла
+      NODE_IPS=$(cat ${NODE_IPS_FILE} | tr '\n' ',' | sed 's/,$//')
+      echo "Proxmox nodes: $NODE_IPS"
+
+      # Экспортируем переменные для terraform
+      export TF_VAR_proxmox_node_ips="[\"$(echo $NODE_IPS | sed 's/,/\",\"/g')\"]"
+      export TF_VAR_proxmox_root_password="${PROXMOX_PASSWORD}"
+      # Отключаем SSH-проверку ресурсов (Docker runner не имеет сетевого доступа к Proxmox по SSH)
+      export TF_VAR_enable_resource_check="false"
+
+      for ENV_DIR in ${TF_ROOT}/environments/dev-*/; do
+        if [ -d "$ENV_DIR" ]; then
+          ENV_NAME=$(basename "$ENV_DIR")
+          echo ""
+          echo "=========================================="
+          echo "=== Processing $ENV_NAME ==="
+          echo "=========================================="
+
+          cd "$CI_PROJECT_DIR/$ENV_DIR"
+
+          # ШАГ 1: Скачиваем существующий tfstate из S3 (если есть)
+          echo "--- Step 1: Download existing state from S3 ---"
+          S3_STATE="s3://${YC_S3_BUCKET}/terraform-states/${ENV_NAME}/terraform.tfstate"
+          if aws s3 ls "$S3_STATE" --endpoint-url "${YC_S3_ENDPOINT}" 2>/dev/null; then
+            echo "Found existing state in S3, downloading..."
+            aws s3 cp "$S3_STATE" ./terraform.tfstate --endpoint-url "${YC_S3_ENDPOINT}"
+            echo "State downloaded. Resources in state:"
+            jq -r '.resources[] | "  - \(.type).\(.name)"' terraform.tfstate 2>/dev/null || echo "  (empty or invalid)"
+          else
+            echo "No existing state in S3 for $ENV_NAME, starting fresh"
+          fi
+
+          # ШАГ 2: Terraform init и apply
+          echo "--- Step 2: Terraform init ---"
+          terraform init
+
+          echo "--- Step 3: Terraform plan ---"
+          # -var enable_resource_check=false отключает SSH-проверку ресурсов
+          # (Docker runner не имеет сетевого доступа к Proxmox по SSH)
+          terraform plan -var enable_resource_check=false -out=tfplan
+
+          echo "--- Step 4: Terraform apply ---"
+          terraform apply -auto-approve tfplan
+
+          # ШАГ 3: Загружаем новый state в S3
+          echo "--- Step 5: Upload new state to S3 ---"
+          aws s3 cp ./terraform.tfstate "$S3_STATE" --endpoint-url "${YC_S3_ENDPOINT}"
+          echo "State uploaded to S3"
+
+          echo "--- State summary for $ENV_NAME ---"
+          jq -r '.resources[] | "  - \(.type).\(.name)"' terraform.tfstate 2>/dev/null || echo "  (no resources)"
+
+          cd "$CI_PROJECT_DIR"
+        fi
+      done
+  artifacts:
+    paths:
+      - ${TF_ROOT}/environments/dev-1/terraform.tfstate
+      - ${TF_ROOT}/environments/dev-2/terraform.tfstate
+    expire_in: 1 hour
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"
+
+sync_to_github:
+  stage: sync_to_github
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git
+  script:
+    - echo "Sync to GitHub"
+    - |
+      if [ -z "$GITHUB_TOKEN" ]; then
+        echo "GITHUB_TOKEN not set, skipping"
+        exit 0
+      fi
+    - git config --global user.email "gitlab-ci@local"
+    - git config --global user.name "GitLab-CI"
+    - git remote add github "https://x-access-token:${GITHUB_TOKEN}@${GITHUB_REPO}" || true
+    - git push github HEAD:${GITHUB_BRANCH} --force || echo "Push failed"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"
+  allow_failure: true
+
+save_state:
+  stage: save_state
+  image:
+    name: amazon/aws-cli:latest
+    entrypoint: [""]
+  dependencies:
+    - terraform_apply
+  script:
+    - echo "Save State to S3"
+    - |
+      if [ -z "$YC_ACCESS_KEY_ID" ] || [ -z "$YC_SECRET_ACCESS_KEY" ]; then
+        echo "S3 credentials not set"
+        exit 1
+      fi
+    - mkdir -p ~/.aws
+    - echo "[default]" > ~/.aws/credentials
+    - echo "aws_access_key_id = $YC_ACCESS_KEY_ID" >> ~/.aws/credentials
+    - echo "aws_secret_access_key = $YC_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+    - echo "[default]" > ~/.aws/config
+    - echo "region = ru-central1" >> ~/.aws/config
+    - aws s3 ls "s3://${YC_S3_BUCKET}/" --endpoint-url "${YC_S3_ENDPOINT}" || echo "Bucket empty"
+    - |
+      for ENV_DIR in ${TF_ROOT}/environments/*/; do
+        if [ -d "$ENV_DIR" ]; then
+          ENV_NAME=$(basename "$ENV_DIR")
+          STATE_FILE="${ENV_DIR}terraform.tfstate"
+          echo "Processing: $ENV_NAME"
+          if [ -f "$STATE_FILE" ]; then
+            echo "Uploading $STATE_FILE"
+            aws s3 cp "$STATE_FILE" "s3://${YC_S3_BUCKET}/terraform-states/${ENV_NAME}/terraform.tfstate" --endpoint-url "${YC_S3_ENDPOINT}"
+          else
+            echo "No state file for $ENV_NAME"
+          fi
+        fi
+      done
+    - |
+      echo '{"pipeline":"'$CI_PIPELINE_ID'","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > /tmp/meta.json
+      aws s3 cp /tmp/meta.json "s3://${YC_S3_BUCKET}/terraform-states/_pipeline_${CI_PIPELINE_ID}.json" --endpoint-url "${YC_S3_ENDPOINT}"
+    - aws s3 ls "s3://${YC_S3_BUCKET}/terraform-states/" --recursive --endpoint-url "${YC_S3_ENDPOINT}" || true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"
+
+verify_infra:
+  stage: verify_infra
+  image: alpine:latest
+  dependencies:
+    - terraform_apply
+  before_script:
+    - apk add --no-cache curl jq aws-cli
+  script:
+    - chmod +x task_2_stage_saved_in_s3/scripts/verify_state.sh
+    - sh task_2_stage_saved_in_s3/scripts/verify_state.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"
+
+# =============================================================================
+# Вывод IP-адресов LXC-контейнеров и инструкций для SSH-подключения
+# Эта информация нужна, т.к. LXC разворачиваются в GitLab CI и их IP не попадают в репозиторий
+# =============================================================================
+show_lxc_info:
+  stage: show_lxc_info
+  image: alpine:latest
+  dependencies:
+    - terraform_apply
+  before_script:
+    - apk add --no-cache jq aws-cli
+    - |
+      # Настройка AWS CLI для Yandex S3
+      mkdir -p ~/.aws
+      echo "[default]" > ~/.aws/credentials
+      echo "aws_access_key_id = $YC_ACCESS_KEY_ID" >> ~/.aws/credentials
+      echo "aws_secret_access_key = $YC_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+      echo "[default]" > ~/.aws/config
+      echo "region = ru-central1" >> ~/.aws/config
+  script:
+    - |
+      echo "=================================================="
+      echo "=== LXC CONTAINERS INFO ==="
+      echo "=================================================="
+      echo ""
+      echo "SSH-ключ для подключения к LXC-контейнерам:"
+      echo "  task_1_terraform_module/vm_access_key"
+      echo ""
+      
+      # Маркер начала секции с IP (для парсинга в тестах)
+      echo "=== LXC_IPS_START ==="
+      
+      # Собираем IP-адреса из всех environments
+      for ENV_DIR in ${TF_ROOT}/environments/dev-*/; do
+        if [ -d "$ENV_DIR" ]; then
+          ENV_NAME=$(basename "$ENV_DIR")
+          S3_STATE="s3://${YC_S3_BUCKET}/terraform-states/${ENV_NAME}/terraform.tfstate"
+          LOCAL_STATE="/tmp/${ENV_NAME}.tfstate"
+          
+          echo ""
+          echo "--- Environment: $ENV_NAME ---"
+          
+          if aws s3 ls "$S3_STATE" --endpoint-url "${YC_S3_ENDPOINT}" > /dev/null 2>&1; then
+            aws s3 cp "$S3_STATE" "$LOCAL_STATE" --endpoint-url "${YC_S3_ENDPOINT}" --quiet
+            
+            # Извлекаем IP-адреса из outputs.lxc_ips
+            LXC_IPS=$(jq -r '.outputs.lxc_ips.value[]? // empty' "$LOCAL_STATE" 2>/dev/null)
+            
+            if [ -z "$LXC_IPS" ]; then
+              echo "  Нет LXC-контейнеров в этом окружении"
+            else
+              for IP in $LXC_IPS; do
+                # Убираем CIDR-маску если есть (например, 10.10.10.100/24 -> 10.10.10.100)
+                IP_CLEAN=$(echo "$IP" | cut -d'/' -f1)
+                echo "  LXC_IP: $IP_CLEAN"
+              done
+            fi
+          else
+            echo "  State не найден в S3 (новое окружение)"
+          fi
+        fi
+      done
+      
+      # Маркер конца секции с IP
+      echo ""
+      echo "=== LXC_IPS_END ==="
+      
+      echo ""
+      echo "=================================================="
+      echo "=== SSH CONNECTION INSTRUCTIONS ==="
+      echo "=================================================="
+      echo ""
+      echo "Для подключения к LXC-контейнерам используйте команду:"
+      echo ""
+      echo "  ssh -i task_1_terraform_module/vm_access_key root@<LXC_IP>"
+      echo ""
+      echo "Например:"
+      echo "  ssh -i task_1_terraform_module/vm_access_key root@10.10.10.100"
+      echo ""
+      echo "Примечание: SSH-ключ должен иметь права 600:"
+      echo "  chmod 600 task_1_terraform_module/vm_access_key"
+      echo ""
+  rules:
+    - if: $CI_COMMIT_BRANCH == "terraform"

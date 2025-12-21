@@ -1,0 +1,126 @@
+# =============================================================================
+# Docker Compose для GitLab с CI/CD и push в GitHub
+#
+# Этот compose файл разворачивает:
+# - GitLab CE (Community Edition) — Git-сервер с CI/CD
+# - GitLab Runner — исполнитель CI/CD пайплайнов
+#
+# После запуска GitLab будет доступен на http://localhost:8929
+# Пользователь: root / ${GITLAB_ROOT_PASSWORD} (из .env)
+#
+# РЕЖИМ СЕТИ: host — контейнеры используют сеть хоста напрямую,
+# что позволяет видеть Proxmox и LXC виртуалки без проброса портов.
+#
+# ВАЖНО: При `docker compose down -v` все данные удаляются!
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # GitLab CE — основной сервер
+  # ---------------------------------------------------------------------------
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    hostname: gitlab.local
+    restart: unless-stopped
+
+    # Режим сети host — контейнер использует сеть хоста напрямую
+    network_mode: host
+
+    # Переменные окружения для конфигурации GitLab
+    environment:
+      GITLAB_ROOT_PASSWORD: ${GITLAB_ROOT_PASSWORD}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      YC_ACCESS_KEY_ID: ${YC_ACCESS_KEY_ID}
+      YC_SECRET_ACCESS_KEY: ${YC_SECRET_ACCESS_KEY}
+      YC_S3_BUCKET: ${YC_S3_BUCKET}
+      YC_S3_ENDPOINT: ${YC_S3_ENDPOINT}
+      GITLAB_OMNIBUS_CONFIG: |
+        # Внешний URL (используется для генерации ссылок в UI)
+        external_url 'http://localhost:8929'
+        
+        # URL для клонирования репозиториев
+        gitlab_rails['gitlab_ssh_host'] = 'localhost'
+        gitlab_rails['gitlab_host'] = 'localhost'
+        gitlab_rails['gitlab_port'] = 8929
+        
+        # NGINX на порту 8929
+        nginx['listen_port'] = 8929
+        nginx['listen_https'] = false
+        
+        # Отключаем Registry
+        registry['enable'] = false
+        
+        # Отключаем мониторинг для экономии ресурсов
+        prometheus_monitoring['enable'] = false
+        alertmanager['enable'] = false
+        node_exporter['enable'] = false
+        redis_exporter['enable'] = false
+        postgres_exporter['enable'] = false
+        pgbouncer_exporter['enable'] = false
+        gitlab_exporter['enable'] = false
+        
+        # Уменьшаем потребление ресурсов
+        puma['worker_processes'] = 2
+        sidekiq['concurrency'] = 5
+
+    # Volumes для данных GitLab (сохраняются между перезапусками)
+    volumes:
+      - gitlab_data:/var/opt/gitlab
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+
+    # Healthcheck для проверки готовности
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8929/-/readiness 2>/dev/null | grep -q ok || curl -s http://localhost:8929 | grep -q GitLab"]
+      interval: 30s
+      timeout: 30s
+      retries: 30
+      start_period: 600s
+
+    # Ограничения ресурсов
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # ---------------------------------------------------------------------------
+  # GitLab Runner — исполнитель CI/CD пайплайнов
+  # ---------------------------------------------------------------------------
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: unless-stopped
+
+    # Режим сети host — видит Proxmox и LXC виртуалки
+    network_mode: host
+
+    # Зависимость от GitLab
+    depends_on:
+      gitlab:
+        condition: service_started
+
+    # Volumes
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner_config:/etc/gitlab-runner
+
+    # Переменные окружения
+    environment:
+      # URL GitLab (localhost т.к. host network)
+      - CI_SERVER_URL=http://localhost:8929
+
+# -----------------------------------------------------------------------------
+# Volumes — для GitLab данных и Runner конфигурации
+# -----------------------------------------------------------------------------
+volumes:
+  gitlab_data:
+    name: gitlab_data
+  gitlab_config:
+    name: gitlab_config
+  gitlab_logs:
+    name: gitlab_logs
+  runner_config:
+    name: gitlab_runner_config
